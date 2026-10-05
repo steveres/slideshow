@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json.schemastore.org/launchsettings.json",
+  "profiles": {
+    "local": {
+      "commandName": "Project",
+      "dotnetRunMessages": true,
+      "launchBrowser": false,
+      "applicationUrl": "http://localhost:5160",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    },
+    "local-azure": {
+      "commandName": "Project",
+      "dotnetRunMessages": true,
+      "launchBrowser": false,
+      "applicationUrl": "http://localhost:5160",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "Database__Provider": "SqlServer",
+        "Database__ConnectionString": "Server=(localdb)\\MSSQLLocalDB;Database=SlideshowLocal;Trusted_Connection=True;TrustServerCertificate=True",
+        "Storage__Provider": "AzureBlob",
+        "Storage__ConnectionString": "UseDevelopmentStorage=true"
+      }
+    }
+  }
+}

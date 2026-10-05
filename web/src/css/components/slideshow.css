@@ -1,0 +1,34 @@
+/* css/components/slideshow.css
+   Layout: photos on the left (75%), map on the right (25%); neither scrolls. */
+
+.slideshow {
+  --fade: 1000ms; /* overwritten from script so timing has one source */
+  position: relative;
+  height: 100%;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: 3fr 1fr;
+  background: var(--color-stage);
+  color: var(--color-paper);
+  font: 16px/1.45 var(--font-ui);
+}
+.slideshow--no-map { grid-template-columns: 1fr; }
+.slideshow--no-map .route-map { display: none; }
+
+/* Photo frame with two stacked, cross-faded layers */
+.slideshow__photos { position: relative; min-width: 0; overflow: hidden; }
+.slideshow__photos--zoomed { cursor: grab; }
+.slideshow__photos--zoomed:active { cursor: grabbing; }
+.slideshow__photos--scrubbing .slideshow__layer { transition: none; }
+
+.slideshow__layer { position: absolute; inset: 0; opacity: 0; transition: opacity var(--fade) ease; }
+.slideshow__layer--visible { opacity: 1; }
+.slideshow__layer > img,
+.slideshow__layer > video { display: block; user-select: none; -webkit-user-drag: none; width: 100%; height: 100%; object-fit: contain; }
+
+/* Buttons inside the slideshow */
+.slideshow button { font: inherit; color: var(--color-paper); background: transparent; border: 1px solid rgba(233, 228, 216, .35); border-radius: 6px; padding: 10px 16px; cursor: pointer; }
+.slideshow button:hover { border-color: var(--color-paper); }
+.slideshow .button--primary { background: var(--color-lamp); border-color: var(--color-lamp); color: var(--color-ink); font-weight: 600; }
+.slideshow button:focus-visible,
+.slideshow input:focus-visible { outline: 2px solid var(--color-lamp); outline-offset: 2px; }

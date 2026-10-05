@@ -1,0 +1,20 @@
+{
+  "name": "slideshow-web",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Slideshow website: plays albums of photos and videos with a route map, timeline and music.",
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "watch": "node build.mjs --watch",
+    "start": "node build.mjs && node server.js",
+    "dev": "node build.mjs --watch --serve"
+  },
+  "dependencies": {
+    "@azure/msal-browser": "^5.24.0",
+    "express": "^5.2.1"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2"
+  }
+}

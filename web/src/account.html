@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account - Slideshow</title>
+
+    <link rel="stylesheet" href="/css/base/reset.css">
+    <link rel="stylesheet" href="/css/base/variables.css">
+    <link rel="stylesheet" href="/css/base/shared.css">
+    <link rel="stylesheet" href="/css/components/navigation.css">
+    <link rel="stylesheet" href="/css/components/account.css">
+
+    <script type="module" src="/js/pages/account-page.js"></script>
+</head>
+<body>
+    <div id="navigation-placeholder"></div>
+
+    <main class="main-content account">
+        <h1>Your account</h1>
+        <p class="account__loading">Loading…</p>
+        <p class="form-error account__error" role="alert" hidden></p>
+
+        <section class="card account__details" hidden>
+            <dl class="account__facts">
+                <dt>Name</dt><dd class="account__name"></dd>
+                <dt>Email</dt><dd class="account__email"></dd>
+                <dt>Member since</dt><dd class="account__since"></dd>
+                <dt>Albums</dt><dd class="account__albums"></dd>
+                <dt>Files</dt><dd class="account__files"></dd>
+                <dt>Storage</dt><dd><span class="account__storage"></span><meter class="account__meter" min="0" optimum="0"></meter></dd>
+            </dl>
+
+            <div class="account__actions">
+                <button type="button" class="button account__sign-out">Sign out everywhere</button>
+                <button type="button" class="button button--danger account__delete">Delete account…</button>
+            </div>
+
+            <div class="account__confirm" hidden>
+                <p><strong>Delete your account?</strong> All your albums, photos, videos and music are deleted
+                   permanently, and your sign-in is removed. This can't be undone.</p>
+                <div class="account__actions">
+                    <button type="button" class="button button--danger account__confirm-delete">Yes, delete everything</button>
+                    <button type="button" class="button account__cancel">Cancel</button>
+                </div>
+            </div>
+        </section>
+    </main>
+</body>
+</html>

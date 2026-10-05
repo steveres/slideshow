@@ -1,0 +1,12 @@
+/* css/components/slideshow-timeline.css — scrubber down the left of the photo frame */
+
+.timeline { position: absolute; left: 10px; top: 5%; height: 90%; width: 0; opacity: .45; transition: opacity .2s; }
+.timeline:has(.timeline__rail:hover),
+.timeline:focus-within,
+.timeline--dragging { opacity: 1; }
+.timeline__rail { position: absolute; left: 0; top: 0; bottom: 0; width: 26px; cursor: pointer; touch-action: none; border-radius: 13px; }
+.timeline__rail::before { content: ""; position: absolute; left: 10px; top: 0; bottom: 0; width: 6px; border-radius: 3px; background: rgba(233, 228, 216, .55); box-shadow: 0 0 0 1px rgba(20, 24, 29, .6); }
+.timeline__thumb { position: absolute; left: 50%; width: 18px; height: 34px; transform: translate(-50%, -50%); border-radius: 9px; background: var(--color-lamp); border: 2px solid var(--color-ink); cursor: grab; }
+.timeline--dragging .timeline__thumb { cursor: grabbing; }
+.timeline__labels { position: absolute; left: 34px; top: 0; bottom: 0; pointer-events: none; }
+.timeline__labels span { position: absolute; transform: translateY(-50%); font-size: 12px; white-space: nowrap; color: var(--color-paper); text-shadow: 0 1px 3px #000, 0 0 2px #000; font-variant-numeric: tabular-nums; }

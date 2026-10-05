@@ -1,0 +1,6 @@
+/* css/components/slideshow-start.css — start screen covering the slideshow */
+
+.start-screen { position: absolute; inset: 0; display: grid; place-content: center; justify-items: start; gap: 14px; padding: 32px; background: var(--color-ink); }
+.start-screen__title { margin: 0; font: 400 clamp(2.4rem, 7vw, 4.2rem)/1.05 var(--font-display); letter-spacing: -.01em; }
+.start-screen__message { margin: 0 0 10px; max-width: 34ch; color: var(--color-muted); }
+.start-screen__actions { display: flex; flex-wrap: wrap; gap: 10px; }

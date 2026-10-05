@@ -1,0 +1,30 @@
+/* css/base/shared.css — page frame, buttons, forms and messages for regular (scrolling) pages */
+
+body { min-height: 100vh; background: var(--color-ink); color: var(--color-paper); font: 16px/1.5 var(--font-ui); }
+
+.main-content { max-width: var(--content-width); margin: 0 auto; padding: var(--spacing-xl) var(--spacing-md); }
+
+h1 { font: 400 clamp(2rem, 5vw, 3rem)/1.1 var(--font-display); margin: 0 0 var(--spacing-lg); }
+
+a { color: var(--color-lamp); }
+
+.card { background: var(--color-panel); border: 1px solid var(--color-line); border-radius: var(--radius-md); padding: var(--spacing-lg); }
+
+/* Buttons (also used on links) */
+.button { display: inline-block; font: inherit; color: var(--color-paper); background: transparent; border: 1px solid var(--color-line-strong); border-radius: var(--radius-sm); padding: 10px 16px; cursor: pointer; text-decoration: none; }
+.button:hover { border-color: var(--color-paper); }
+.button:disabled { opacity: .5; cursor: default; }
+.button--primary { background: var(--color-lamp); border-color: var(--color-lamp); color: var(--color-ink); font-weight: 600; }
+.button--danger { border-color: var(--color-danger); color: var(--color-danger); }
+.button--danger:hover { background: var(--color-danger); color: var(--color-ink); }
+.button--quiet { border-color: transparent; padding: 6px 10px; }
+.button:focus-visible, input:focus-visible, a:focus-visible { outline: 2px solid var(--color-lamp); outline-offset: 2px; }
+
+/* Form fields */
+.field { display: grid; gap: var(--spacing-xs); font-size: .95rem; color: var(--color-muted); }
+.field input { font: inherit; color: var(--color-paper); background: var(--color-field); border: 1px solid var(--color-line-strong); border-radius: var(--radius-sm); padding: 10px 12px; }
+
+/* Messages */
+.notice { padding: var(--spacing-sm) var(--spacing-md); border-left: 3px solid var(--color-lamp); background: rgba(242, 184, 75, .08); color: var(--color-paper); }
+.notice--dev { border-color: var(--color-muted); background: rgba(139, 147, 160, .1); font-size: .9rem; }
+.form-error { color: var(--color-danger); }

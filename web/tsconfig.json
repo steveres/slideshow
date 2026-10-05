@@ -1,0 +1,17 @@
+{
+  // ts/ compiles 1:1 into src/js/, which the browser loads as native ES modules (no bundler).
+  // "nodenext" makes the compiler insist on explicit ".js" import paths, which browsers require.
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "strict": true,
+    "noUnusedLocals": true,
+    "noImplicitReturns": true,
+    "rootDir": "ts",
+    "outDir": "src/js",
+    "sourceMap": true
+  },
+  "include": ["ts"]
+}

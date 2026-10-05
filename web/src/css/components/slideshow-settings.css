@@ -1,0 +1,16 @@
+/* css/components/slideshow-settings.css — gear button and settings panel */
+
+.slideshow .settings__toggle { position: absolute; top: max(14px, env(safe-area-inset-top)); right: 14px; width: 44px; height: 44px; padding: 9px; border: 0; border-radius: 50%; background: rgba(20, 24, 29, .55); opacity: .4; transition: opacity .2s; }
+.slideshow .settings__toggle:hover,
+.slideshow .settings__toggle:focus-visible,
+.slideshow .settings__toggle[aria-expanded="true"] { opacity: 1; }
+.settings__toggle svg { display: block; width: 100%; height: 100%; }
+
+.settings__panel { position: absolute; top: calc(max(14px, env(safe-area-inset-top)) + 54px); right: 14px; width: min(320px, calc(100% - 28px)); padding: 18px; display: grid; gap: 14px; background: var(--color-ink); border: 1px solid rgba(233, 228, 216, .15); border-radius: 10px; }
+.settings__panel label { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.settings__duration { width: 5em; padding: 6px 8px; font: inherit; color: var(--color-paper); background: #0c0f12; border: 1px solid rgba(233, 228, 216, .25); border-radius: 6px; }
+.settings__show-map { width: 20px; height: 20px; accent-color: var(--color-lamp); }
+.settings__row { display: flex; gap: 10px; }
+.settings__row button { flex: 1; }
+
+@media (prefers-reduced-motion: reduce) { .slideshow .settings__toggle { transition: none; } }

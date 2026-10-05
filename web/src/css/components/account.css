@@ -1,0 +1,10 @@
+/* css/components/account.css */
+
+.account__details { max-width: 640px; }
+.account__facts { display: grid; grid-template-columns: max-content 1fr; gap: var(--spacing-sm) var(--spacing-lg); margin: 0 0 var(--spacing-lg); }
+.account__facts dt { color: var(--color-muted); }
+.account__facts dd { margin: 0; }
+.account__meter { display: block; width: 100%; max-width: 320px; height: 10px; margin-top: var(--spacing-xs); }
+.account__actions { display: flex; flex-wrap: wrap; gap: var(--spacing-sm); }
+.account__confirm { margin-top: var(--spacing-lg); padding-top: var(--spacing-lg); border-top: 1px solid var(--color-line); }
+.account__loading { color: var(--color-muted); }

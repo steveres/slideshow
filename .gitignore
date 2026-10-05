@@ -4,4 +4,19 @@ build/
 
 # Contains the Google Maps API key - never commit
 apikey.txt
-slideshow.html
+web/ts/generated/
+
+# Website build output (compiled from web/ts; vendor files copied from node_modules)
+web/src/js/
+web/src/vendor/
+web/app.config.local.json
+
+# .NET API build output and local data
+bin/
+obj/
+App_Data/
+TestResults/
+*.user
+
+# Personal Claude Code settings
+.claude/settings.local.json

@@ -1,0 +1,9 @@
+/* css/components/navigation.css */
+
+.header { border-bottom: 1px solid var(--color-line); background: var(--color-ink); }
+.nav { max-width: var(--content-width); min-height: var(--header-height); margin: 0 auto; padding: 0 var(--spacing-md); display: flex; align-items: center; gap: var(--spacing-lg); flex-wrap: wrap; }
+.nav__brand { font: 400 1.4rem var(--font-display); color: var(--color-paper); text-decoration: none; }
+.nav__menu { display: flex; gap: var(--spacing-md); margin: 0; padding: 0; list-style: none; flex: 1; }
+.nav__link { color: var(--color-muted); text-decoration: none; }
+.nav__link:hover, .nav__link[aria-current="page"] { color: var(--color-paper); }
+.nav__auth { display: flex; align-items: center; gap: var(--spacing-sm); }

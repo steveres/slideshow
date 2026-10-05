@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Slideshow</title>
+
+    <!-- CSS imports -->
+    <link rel="stylesheet" href="/css/base/reset.css">
+    <link rel="stylesheet" href="/css/base/variables.css">
+    <link rel="stylesheet" href="/css/components/slideshow.css">
+    <link rel="stylesheet" href="/css/components/slideshow-controls.css">
+    <link rel="stylesheet" href="/css/components/slideshow-timeline.css">
+    <link rel="stylesheet" href="/css/components/route-map.css">
+    <link rel="stylesheet" href="/css/components/slideshow-start.css">
+    <link rel="stylesheet" href="/css/components/slideshow-settings.css">
+
+    <!-- JavaScript (ES module; imports the rest) -->
+    <script type="module" src="/js/pages/slideshow-page.js"></script>
+</head>
+<body class="page--fullscreen">
+    <div class="slideshow">
+        <!-- Photo frame -->
+        <main class="slideshow__photos">
+            <div class="slideshow__layer"></div>
+            <div class="slideshow__layer"></div>
+
+            <div class="timeline" hidden>
+                <div class="timeline__rail" role="slider" tabindex="0" aria-orientation="vertical" aria-label="Position in slideshow">
+                    <div class="timeline__thumb"></div>
+                </div>
+                <div class="timeline__labels" aria-hidden="true"></div>
+            </div>
+
+            <div class="controls" role="toolbar" aria-label="Slideshow controls">
+                <button class="controls__prev" aria-label="Previous"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5h2v14H6zM20 5v14L9 12z"/></svg></button>
+                <button class="controls__play" aria-label="Pause">
+                    <svg class="icon-pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg>
+                    <svg class="icon-play" viewBox="0 0 24 24" aria-hidden="true" hidden><path d="M8 5v14l11-7z"/></svg>
+                </button>
+                <button class="controls__next" aria-label="Next"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 5h2v14h-2zM4 5v14l11-7z"/></svg></button>
+                <label class="controls__speed">Speed <input class="controls__speed-input" type="range" min="1" max="5" step="1"> <output class="controls__speed-out"></output></label>
+                <button class="controls__mute" aria-label="Mute music" hidden>
+                    <svg class="icon-sound" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                    <svg class="icon-muted" viewBox="0 0 24 24" aria-hidden="true" hidden><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 9.5l5 5M21.5 9.5l-5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                </button>
+            </div>
+        </main>
+
+        <!-- Route map -->
+        <aside class="route-map" aria-label="Route map">
+            <div class="route-map__canvas"></div>
+            <svg class="route-map__path" hidden><polyline points=""/><g class="route-map__dots"></g></svg>
+            <div class="route-map__pin" hidden></div>
+            <div class="route-map__notice">The route appears here once a photo with a location is shown.</div>
+        </aside>
+
+        <!-- Start screen: choose a folder -->
+        <div class="start-screen">
+            <h1 class="start-screen__title">Slideshow</h1>
+            <p class="start-screen__message">Choose the folder that holds your photos and videos.</p>
+            <div class="start-screen__actions">
+                <button class="start-screen__resume button--primary" hidden></button>
+                <button class="start-screen__pick button--primary">Choose folder</button>
+            </div>
+            <input class="start-screen__fallback" type="file" webkitdirectory multiple hidden>
+        </div>
+
+        <!-- Settings -->
+        <button class="settings__toggle" aria-label="Settings" aria-expanded="false" aria-controls="slideshow-settings">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3h.1a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8v.1a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>
+            </svg>
+        </button>
+
+        <div class="settings__panel" id="slideshow-settings" hidden>
+            <label>Seconds per image <input class="settings__duration" type="number" min="1" max="5" step="1"></label>
+            <label>Show map <input class="settings__show-map" type="checkbox"></label>
+            <div class="settings__row">
+                <button class="settings__restart">Restart from beginning</button>
+                <button class="settings__change">Change folder</button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

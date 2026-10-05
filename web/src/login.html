@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign in - Slideshow</title>
+
+    <link rel="stylesheet" href="/css/base/reset.css">
+    <link rel="stylesheet" href="/css/base/variables.css">
+    <link rel="stylesheet" href="/css/base/shared.css">
+    <link rel="stylesheet" href="/css/components/navigation.css">
+    <link rel="stylesheet" href="/css/components/login.css">
+
+    <script type="module" src="/js/pages/login-page.js"></script>
+</head>
+<body>
+    <div id="navigation-placeholder"></div>
+
+    <main class="main-content">
+        <section class="card login">
+            <h1 class="login__title">Sign in</h1>
+
+            <!-- Local development: any email; each email is its own user -->
+            <form class="login__form login__form--dev" hidden>
+                <p class="notice notice--dev">Development sign-in: no password. Any email works, and each email is a separate user.</p>
+                <label class="field">Email <input name="email" type="email" autocomplete="email" required></label>
+                <label class="field">Display name <input name="name" type="text" autocomplete="name" placeholder="Optional"></label>
+                <button type="submit" class="button button--primary">Sign in</button>
+            </form>
+
+            <!-- Microsoft Entra External ID -->
+            <div class="login__form login__form--entra" hidden>
+                <p>Sign in with your account, or create one. You'll come back here afterwards.</p>
+                <button type="button" class="button button--primary">Sign in or create account</button>
+            </div>
+
+            <p class="login__busy" hidden>Signing you in…</p>
+            <p class="form-error login__error" role="alert" hidden></p>
+        </section>
+    </main>
+</body>
+</html>

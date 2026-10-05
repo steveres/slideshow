@@ -1,0 +1,7 @@
+/* css/components/login.css */
+
+.login { max-width: 420px; margin: var(--spacing-xl) auto; }
+.login__title { font-size: 2rem; }
+.login__form { display: grid; gap: var(--spacing-md); }
+.login__form p { margin: 0; }
+.login__busy { color: var(--color-muted); }

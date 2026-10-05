@@ -1,0 +1,33 @@
+/* css/base/variables.css */
+
+:root {
+  /* Colors */
+  --color-stage: #000;          /* behind photos */
+  --color-ink: #14181d;         /* page background, dark panels */
+  --color-panel: #1b2027;       /* cards */
+  --color-field: #0c0f12;       /* inputs */
+  --color-paper: #e9e4d8;       /* text on dark */
+  --color-muted: #8b93a0;
+  --color-lamp: #f2b84b;        /* accent */
+  --color-danger: #f07a6a;
+  --color-line: rgba(233, 228, 216, .12);
+  --color-line-strong: rgba(233, 228, 216, .35);
+  --color-map-bg: #d9d4c7;
+
+  /* Typography */
+  --font-ui: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-display: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+
+  /* Spacing */
+  --spacing-xs: .25rem;
+  --spacing-sm: .5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+
+  /* Layout */
+  --content-width: 960px;
+  --header-height: 3.5rem;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+}

@@ -1,0 +1,10 @@
+/* css/base/reset.css */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body { margin: 0; }
+
+[hidden] { display: none !important; }
+
+/* A page that is one full-window component (no scrolling), e.g. the slideshow player */
+html:has(body.page--fullscreen), body.page--fullscreen { height: 100%; overflow: hidden; }

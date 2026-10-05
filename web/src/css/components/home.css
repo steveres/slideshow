@@ -1,0 +1,7 @@
+/* css/components/home.css */
+
+.home { padding-top: 12vh; }
+.home__title { font-size: clamp(2.6rem, 8vw, 4.4rem); margin-bottom: var(--spacing-md); }
+.home__hello { color: var(--color-muted); max-width: 40ch; margin: 0 0 var(--spacing-lg); }
+.home__actions { display: flex; flex-wrap: wrap; gap: var(--spacing-sm); }
+.home__deleted { margin-bottom: var(--spacing-xl); }

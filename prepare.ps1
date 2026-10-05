@@ -1,5 +1,5 @@
 <#
-  Prepares a photo folder for slideshow.html:
+  Prepares a photo folder for the slideshow (web/):
     1. Converts .heic/.heif files to .jpg (keeps date and GPS metadata). Installs ImageMagick if needed.
     2. Writes slideshow.json listing every image and video in date-taken order.
   Usage:  prepare.bat "C:\path\to\photos"     (or drag the folder onto prepare.bat)
@@ -9,7 +9,7 @@
 param([Parameter(Mandatory = $true)][string]$Folder)
 $ErrorActionPreference = 'Stop'
 
-# Keep these lists in step with IMAGE_EXT / VIDEO_EXT in src/slideshow.ts
+# Keep these lists in step with IMAGE_EXT / VIDEO_EXT in web/ts/media/media-types.ts
 $ImageExt   = '.jpg', '.jpeg', '.png', '.gif', '.webp', '.avif', '.bmp', '.svg'
 $VideoExt   = '.mp4', '.m4v', '.webm', '.mov', '.ogv'
 $HeicExt    = '.heic', '.heif'
