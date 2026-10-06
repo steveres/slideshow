@@ -19,31 +19,37 @@ interface RequestOptions {
   noRedirect?: boolean;
 }
 
-async function send(path: string, options: RequestOptions = {}): Promise<Response> {
+/** The access token, or (when there is none) a trip to the login page. */
+async function token(noRedirect = false): Promise<string> {
   const auth = await getAuth();
-  let token: string;
   try {
-    token = await auth.getAccessToken();
+    return await auth.getAccessToken();
   } catch (err) {
-    if (err instanceof NotSignedInError && !options.noRedirect) await auth.signIn(currentPath());
+    if (err instanceof NotSignedInError && !noRedirect) await auth.signIn(currentPath());
     throw err;
   }
+}
 
-  const headers: Record<string, string> = { Authorization: `Bearer ${token}` };
+/** Turns a failed response into an ApiError, or into a sign-in trip for 401 (expired or revoked token). */
+async function failure(status: number, bodyText: string, noRedirect = false): Promise<Error> {
+  if (status === 401 && !noRedirect) {
+    await (await getAuth()).signIn(currentPath());
+    return new NotSignedInError();
+  }
+  let problem: { detail?: string; title?: string; code?: string } | null = null;
+  try { problem = JSON.parse(bodyText); } catch { /* not JSON */ }
+  return new ApiError(status, problem?.code, problem?.detail ?? problem?.title ?? `Request failed (${status}).`);
+}
+
+async function send(path: string, options: RequestOptions = {}): Promise<Response> {
+  const headers: Record<string, string> = { Authorization: `Bearer ${await token(options.noRedirect)}` };
   let body: BodyInit | undefined;
   if (options.json !== undefined) { headers['Content-Type'] = 'application/json'; body = JSON.stringify(options.json); }
   else if (options.form) body = options.form; // the browser sets the multipart boundary
 
   const res = await fetch(`${APP_CONFIG.apiBaseUrl}${path}`, { method: options.method ?? 'GET', headers, body });
   if (res.ok) return res;
-
-  // Token expired or revoked (e.g. signed out on another device): sign in again.
-  if (res.status === 401 && !options.noRedirect) {
-    await auth.signIn(currentPath());
-    throw new NotSignedInError();
-  }
-  const problem = await res.json().catch(() => null) as { detail?: string; title?: string; code?: string } | null;
-  throw new ApiError(res.status, problem?.code, problem?.detail ?? problem?.title ?? `Request failed (${res.status}).`);
+  throw await failure(res.status, await res.text(), options.noRedirect);
 }
 
 export const api = {
@@ -54,14 +60,27 @@ export const api = {
     const res = await send(path, { ...options, method: 'POST', json });
     return res.status === 204 ? undefined : res.json() as Promise<T>;
   },
-  async postForm<T>(path: string, form: FormData): Promise<T> {
-    return (await send(path, { method: 'POST', form })).json() as Promise<T>;
-  },
   async delete(path: string, options?: RequestOptions): Promise<void> {
     await send(path, { ...options, method: 'DELETE' });
   },
   /** Downloads a file (e.g. an image) as a Blob. */
   async blob(path: string): Promise<Blob> {
     return (await send(path)).blob();
+  },
+
+  /** Uploads a multipart form, reporting progress (0..1). fetch can't report upload progress, so this uses XHR. */
+  async upload<T>(path: string, form: FormData, onProgress?: (fraction: number) => void): Promise<T> {
+    const bearer = await token();
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `${APP_CONFIG.apiBaseUrl}${path}`);
+    xhr.setRequestHeader('Authorization', `Bearer ${bearer}`);
+    if (onProgress) xhr.upload.onprogress = e => { if (e.lengthComputable) onProgress(e.loaded / e.total); };
+    await new Promise<void>((resolve, reject) => {
+      xhr.onload = () => resolve();
+      xhr.onerror = () => reject(new TypeError('Network error during upload.'));
+      xhr.send(form);
+    });
+    if (xhr.status >= 200 && xhr.status < 300) return JSON.parse(xhr.responseText) as T;
+    throw await failure(xhr.status, xhr.responseText);
   },
 };

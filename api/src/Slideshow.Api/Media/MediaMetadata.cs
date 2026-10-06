@@ -15,9 +15,9 @@ public static partial class MetadataReader
 {
     private const int VideoScanBytes = 1 << 20; // the head and tail of a video hold its metadata
 
-    /// <param name="utcOffset">The uploader's UTC offset, used to turn UTC timestamps (MP4 headers, file times) into local time like EXIF.</param>
-    /// <param name="lastModifiedUtc">The file's modified time from the client: the fallback date.</param>
-    public static MediaMetadata Read(Stream file, MediaKind kind, TimeSpan utcOffset, DateTime? lastModifiedUtc)
+    /// <param name="utcOffset">The uploader's UTC offset, used to turn UTC timestamps (MP4 headers) into local time like EXIF.</param>
+    /// <remarks>Only the capture date recorded in the file counts; file modified times are deliberately not used.</remarks>
+    public static MediaMetadata Read(Stream file, MediaKind kind, TimeSpan utcOffset)
     {
         DateTime? taken = null;
         TakenSource? source = null;
@@ -46,11 +46,6 @@ public static partial class MetadataReader
             // Malformed metadata: treat as "none", like the SPA does.
         }
 
-        if (taken is null && lastModifiedUtc is { } lm && kind != MediaKind.Audio)
-        {
-            taken = DateTime.SpecifyKind(lm + utcOffset, DateTimeKind.Unspecified);
-            source = TakenSource.LastModified;
-        }
         if (taken is { } t) taken = DateTime.SpecifyKind(new DateTime(t.Ticks - t.Ticks % TimeSpan.TicksPerSecond), DateTimeKind.Unspecified);
         return new MediaMetadata(taken, source, gps?.Lat, gps?.Lon);
     }

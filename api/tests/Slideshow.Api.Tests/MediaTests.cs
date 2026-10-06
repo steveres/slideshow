@@ -30,6 +30,8 @@ public sealed class MediaTests(ApiFactory factory) : IClassFixture<ApiFactory>
         Assert.Equal("exif", info.GetProperty("takenSource").GetString());
         Assert.Equal(-33.8688, info.GetProperty("location").GetProperty("lat").GetDouble(), 3);
         Assert.Equal(151.2093, info.GetProperty("location").GetProperty("lon").GetDouble(), 3);
+        Assert.True(info.GetProperty("playable").GetBoolean());
+        Assert.Empty(info.GetProperty("missing").EnumerateArray());
 
         var url = info.GetProperty("url").GetString()!;
         var res = await client.GetAsync(url);
@@ -72,23 +74,16 @@ public sealed class MediaTests(ApiFactory factory) : IClassFixture<ApiFactory>
         Assert.Equal(-122.4194, info.GetProperty("location").GetProperty("lon").GetDouble(), 4);
     }
 
-    [Theory]
-    [InlineData("1783157465000")]          // Unix ms: 2026-07-04T09:31:05Z
-    [InlineData("2026-07-04T09:31:05Z")]
-    public async Task Last_modified_is_the_fallback_date(string lastModified)
-    {
-        var (client, album) = await NewAlbumAsync();
-        var info = await UploadAsync(client, album, TestMedia.Png(), "screenshot.png", lastModified: lastModified, utcOffsetMinutes: -300);
-        Assert.Equal("2026-07-04T04:31:05", info.GetProperty("taken").GetString());
-        Assert.Equal("lastModified", info.GetProperty("takenSource").GetString());
-    }
-
     [Fact]
-    public async Task Exif_date_wins_over_last_modified()
+    public async Task Without_a_capture_date_in_the_file_there_is_no_date()
     {
+        // File modified times are never used: a photo without an EXIF date stays undated and isn't shown.
         var (client, album) = await NewAlbumAsync();
-        var info = await UploadAsync(client, album, TestMedia.Jpeg(new DateTime(2020, 1, 2, 3, 4, 5)), "a.jpg", lastModified: "2026-07-04T09:31:05Z");
-        Assert.Equal("2020-01-02T03:04:05", info.GetProperty("taken").GetString());
+        var info = await UploadAsync(client, album, TestMedia.Png(), "screenshot.png", utcOffsetMinutes: -300);
+        Assert.Equal(JsonValueKind.Null, info.GetProperty("taken").ValueKind);
+        Assert.Equal(JsonValueKind.Null, info.GetProperty("takenSource").ValueKind);
+        Assert.False(info.GetProperty("playable").GetBoolean());
+        Assert.Equal(["date", "location"], info.GetProperty("missing").EnumerateArray().Select(m => m.GetString()));
     }
 
     [Theory]
@@ -122,6 +117,7 @@ public sealed class MediaTests(ApiFactory factory) : IClassFixture<ApiFactory>
         Assert.Equal("audio", track.GetProperty("kind").GetString());
         Assert.Equal("audio/mpeg", track.GetProperty("contentType").GetString());
         Assert.Equal(JsonValueKind.Null, track.GetProperty("taken").ValueKind);
+        Assert.True(track.GetProperty("playable").GetBoolean()); // music needs no date or location
 
         var music = await client.GetFromJsonAsync<JsonElement[]>($"/api/v1/albums/{album}/music");
         Assert.Single(music!);

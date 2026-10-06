@@ -13,3 +13,4 @@ export const MAX_DURATION = 5;      // seconds per image: 1..5 (speed slider and
 export const MAX_PHOTO_ZOOM = 8;    // wheel zoom limit on the photo
 export const TIMELINE_LABELS = 10;  // date labels along the timeline
 export const TILE = 256;            // Web Mercator world size in px at zoom 0
+export const OVERLAY_IDLE_MS = 3000; // hide the controls, timeline and buttons after this long without input

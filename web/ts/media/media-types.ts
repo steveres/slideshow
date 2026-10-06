@@ -2,8 +2,12 @@
 
 export type MediaKind = 'image' | 'video';
 
-/** A photo or video. `taken` is "yyyy-MM-dd HH:mm:ss" when known. */
-export interface MediaItem { name: string; kind: MediaKind; getFile(): Promise<File>; taken?: string; }
+/**
+ * A photo or video. `taken` is "yyyy-MM-dd HH:mm:ss" (or ISO "yyyy-MM-ddTHH:mm:ss") when known.
+ * `location`, when the source already knows it (the API does), saves reading GPS from the file;
+ * undefined means "read it from the file".
+ */
+export interface MediaItem { name: string; kind: MediaKind; getFile(): Promise<File>; taken?: string; location?: LatLon | null; }
 
 export interface Track { name: string; getFile(): Promise<File>; }
 

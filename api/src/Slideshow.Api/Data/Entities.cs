@@ -33,7 +33,8 @@ public enum MediaCollection { Images = 0, Music = 1 }
 
 public enum MediaKind { Image = 0, Video = 1, Audio = 2 }
 
-public enum TakenSource { Exif = 0, Video = 1, LastModified = 2 }
+/// <summary>Where the capture date came from. Only real capture dates are used, never file times.</summary>
+public enum TakenSource { Exif = 0, Video = 1 }
 
 public sealed class MediaFile
 {

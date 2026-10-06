@@ -27,4 +27,13 @@ a { color: var(--color-lamp); }
 /* Messages */
 .notice { padding: var(--spacing-sm) var(--spacing-md); border-left: 3px solid var(--color-lamp); background: rgba(242, 184, 75, .08); color: var(--color-paper); }
 .notice--dev { border-color: var(--color-muted); background: rgba(139, 147, 160, .1); font-size: .9rem; }
+.notice--warning { border-color: var(--color-lamp); }
 .form-error { color: var(--color-danger); }
+
+/* Small status labels */
+.badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: .8rem; white-space: nowrap; }
+.badge--ok { color: var(--color-ok); background: rgba(143, 207, 154, .12); }
+.badge--warning { color: var(--color-lamp); background: rgba(242, 184, 75, .14); }
+
+/* Text for screen readers only */
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }

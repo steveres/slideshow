@@ -55,12 +55,18 @@ function tsc(watch) {
 const watch = process.argv.includes('--watch');
 const serve = process.argv.includes('--serve');
 
+// Claim the port before touching any files, so a second `npm run dev` stops cleanly
+// instead of wiping the output another one is serving.
+if (serve) {
+  try { await (await import('./server.js')).start(); }
+  catch (err) { console.error(err.message ?? err); process.exit(1); }
+}
+
 writeAppConfig();
 copyVendor();
 rmSync(OUT_DIR, { recursive: true, force: true }); // no stale modules from renamed/deleted .ts files
 
 if (watch) {
-  if (serve) await import('./server.js');
   await tsc(true);
 } else {
   const code = await tsc(false);

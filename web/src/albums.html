@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Albums - Slideshow</title>
+
+    <link rel="stylesheet" href="/css/base/reset.css">
+    <link rel="stylesheet" href="/css/base/variables.css">
+    <link rel="stylesheet" href="/css/base/shared.css">
+    <link rel="stylesheet" href="/css/components/navigation.css">
+    <link rel="stylesheet" href="/css/components/albums.css">
+
+    <script type="module" src="/js/pages/albums-page.js"></script>
+</head>
+<body>
+    <div id="navigation-placeholder"></div>
+
+    <main class="main-content albums">
+        <h1>Albums</h1>
+
+        <form class="card albums__new">
+            <label class="field albums__new-name">New album <input name="name" type="text" maxlength="200" placeholder="e.g. Italy 2026" required></label>
+            <label class="field albums__new-description">Description <input name="description" type="text" maxlength="2000" placeholder="Optional"></label>
+            <button type="submit" class="button button--primary">Create album</button>
+        </form>
+
+        <p class="albums__loading">Loading…</p>
+        <p class="form-error albums__error" role="alert" hidden></p>
+        <p class="albums__empty" hidden>No albums yet. Create one above, then add photos, videos and music to it.</p>
+        <ul class="albums__list"></ul>
+    </main>
+</body>
+</html>

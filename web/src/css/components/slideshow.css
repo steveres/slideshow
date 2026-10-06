@@ -26,6 +26,20 @@
 .slideshow__layer > img,
 .slideshow__layer > video { display: block; user-select: none; -webkit-user-drag: none; width: 100%; height: 100%; object-fit: contain; }
 
+/* Back to the album (top-left; mirrors the settings gear top-right) */
+.slideshow__back { position: absolute; top: max(14px, env(safe-area-inset-top)); left: 14px; display: inline-flex; align-items: center; gap: 8px; max-width: min(40ch, 45%); height: 44px; padding: 0 16px 0 12px; border-radius: 999px; background: rgba(20, 24, 29, .55); color: var(--color-paper); font-size: 15px; text-decoration: none; opacity: .45; transition: opacity .2s; }
+.slideshow__back:hover, .slideshow__back:focus-visible { opacity: 1; }
+.slideshow__back:focus-visible { outline: 2px solid var(--color-lamp); outline-offset: 2px; }
+.slideshow__back-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Idle: overlays fade out, and the cursor hides over the photo. !important beats their own
+   hover/focus opacity rules, which can't apply anyway: any pointer movement or key wakes them. */
+.slideshow--idle .controls,
+.slideshow--idle .timeline,
+.slideshow--idle .settings__toggle,
+.slideshow--idle .slideshow__back { opacity: 0 !important; pointer-events: none; transition: opacity .6s; }
+.slideshow--idle .slideshow__photos { cursor: none; }
+
 /* Buttons inside the slideshow */
 .slideshow button { font: inherit; color: var(--color-paper); background: transparent; border: 1px solid rgba(233, 228, 216, .35); border-radius: 6px; padding: 10px 16px; cursor: pointer; }
 .slideshow button:hover { border-color: var(--color-paper); }

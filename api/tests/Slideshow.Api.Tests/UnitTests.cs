@@ -77,7 +77,7 @@ public sealed class MetadataTests
     public void Corrupt_metadata_is_treated_as_none()
     {
         byte[] junk = [0xFF, 0xD8, 0xFF, 0xE1, 0x00, 0x10, .. "Exif\0\0MM\0*\xFF\xFF\xFF\xFF"u8.ToArray()];
-        var meta = MetadataReader.Read(new MemoryStream(junk), MediaKind.Image, TimeSpan.Zero, null);
+        var meta = MetadataReader.Read(new MemoryStream(junk), MediaKind.Image, TimeSpan.Zero);
         Assert.Null(meta.TakenAt);
         Assert.Null(meta.Latitude);
     }
@@ -85,7 +85,7 @@ public sealed class MetadataTests
     [Fact]
     public void Zero_zero_gps_is_ignored()
     {
-        var meta = MetadataReader.Read(new MemoryStream(TestMedia.Jpeg(gps: (0, 0))), MediaKind.Image, TimeSpan.Zero, null);
+        var meta = MetadataReader.Read(new MemoryStream(TestMedia.Jpeg(gps: (0, 0))), MediaKind.Image, TimeSpan.Zero);
         Assert.Null(meta.Latitude);
     }
 }

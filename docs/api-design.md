@@ -60,8 +60,10 @@ Out of scope for v1: HEIC conversion, thumbnails, video rendering, sharing album
    If the DB write fails the blob is deleted.
 
 ### Data flow: play
-1. `POST /albums/{id}/compile` sorts the album's slides by date taken (then natural filename order),
-   and stores the result as the album's manifest.
+1. `POST /albums/{id}/compile` takes the photos and videos that have **both** a capture date (EXIF for
+   photos, the file's own creation date for videos) **and** a location, sorts them by date (then natural
+   filename order) and stores the result as the album's manifest. Files missing either are left out;
+   listings flag them (`playable: false`, `missing: [...]`) so the UI can say why.
 2. SPA `GET /albums/{id}` → manifest (ordered slides with dates + GPS, music list).
 3. SPA fetches each item's bytes with `GET .../images/{id}` (bearer token, `Range` supported) and
    shows it via an object URL — the same way it handles local `File`s today.
@@ -120,7 +122,7 @@ Base path `/api/v1`. JSON uses camelCase. Errors are RFC 7807 `application/probl
 | Method & path | Result |
 |---|---|
 | `GET /albums/{albumId}/{collection}` | `MediaInfo[]` in upload order. |
-| `POST /albums/{albumId}/{collection}` | multipart: `file` (required), `lastModified` (optional, ISO-8601 or Unix ms — the file's modified time, used as the date if the file has none). `201` + `MediaInfo`. |
+| `POST /albums/{albumId}/{collection}` | multipart: `file` (required), `utcOffsetMinutes` (optional: the uploader's UTC offset, to turn a video's UTC creation time into local time like EXIF). `201` + `MediaInfo`. |
 | `GET /albums/{albumId}/{collection}/{id}` | The bytes, with the sniffed `Content-Type`, `Range`/`ETag` support, `Cache-Control: private, immutable`. |
 | `GET /albums/{albumId}/{collection}/{id}/info` | `MediaInfo`. |
 | `DELETE /albums/{albumId}/{collection}/{id}` | `204`. |
@@ -137,20 +139,23 @@ can carry script).
 
 // AlbumInfo
 { "id": "guid", "name": "Italy 2026", "description": null, "createdAt": "…Z", "updatedAt": "…Z",
-  "imageCount": 80, "videoCount": 4, "musicCount": 3, "totalBytes": 456789,
+  "imageCount": 80, "videoCount": 4, "musicCount": 3, "excludedCount": 2, "totalBytes": 456789,
   "compiledAt": "…Z" | null, "isStale": false }      // isStale: never compiled, or changed since
 
 // MediaInfo
 { "id": "guid", "fileName": "IMG_0001.jpg", "kind": "image" | "video" | "audio",
   "contentType": "image/jpeg", "sizeBytes": 2345678, "uploadedAt": "…Z",
   "taken": "2026-07-04T09:31:05" | null,           // local wall-clock time, no zone (as EXIF)
-  "takenSource": "exif" | "video" | "lastModified" | null,
-  "location": { "lat": 41.9, "lon": 12.5 } | null }
+  "takenSource": "exif" | "video" | null,         // only real capture dates; file times are never used
+  "location": { "lat": 41.9, "lon": 12.5 } | null,
+  "playable": true,                                // shown in the slideshow (music: always true)
+  "missing": [] }                                  // otherwise why not: "date" and/or "location"
 
 // AlbumManifest
 { "albumId": "guid", "name": "…", "compiledAt": "…Z", "isStale": false,
-  "slides": [ MediaInfo + { "url": "/api/v1/albums/…/images/…" } ],   // play order
-  "music":  [ MediaInfo + { "url": "…" } ] }
+  "slides": [ MediaInfo + { "url": "/api/v1/albums/…/images/…" } ],   // playable only, in play order
+  "music":  [ MediaInfo + { "url": "…" } ],
+  "excludedCount": 2 }                                                  // photos/videos left out
 ```
 
 ## 6. Data model (Azure SQL)

@@ -36,6 +36,8 @@ public static class AlbumEndpoints
             a.Media.Count(m => m.Kind == MediaKind.Image),
             a.Media.Count(m => m.Kind == MediaKind.Video),
             a.Media.Count(m => m.Collection == MediaCollection.Music),
+            // Keep in step with MediaInfoDto.MissingFor.
+            a.Media.Count(m => m.Collection == MediaCollection.Images && (m.TakenAt == null || m.Latitude == null || m.Longitude == null)),
             a.Media.Sum(m => (long?)m.SizeBytes) ?? 0,
             a.CompiledAt,
             a.CompiledVersion == null || a.CompiledVersion != a.ContentVersion));
@@ -63,7 +65,7 @@ public static class AlbumEndpoints
         var album = new Album { Id = Guid.CreateVersion7(), OwnerId = ownerId, Name = name, Description = description, CreatedAt = now, UpdatedAt = now };
         db.Albums.Add(album);
         await db.SaveChangesAsync(ct);
-        var info = new AlbumInfoDto(album.Id, album.Name, album.Description, now, now, 0, 0, 0, 0, null, true);
+        var info = new AlbumInfoDto(album.Id, album.Name, album.Description, now, now, 0, 0, 0, 0, 0, null, true);
         return Results.Created($"/api/v1/albums/{album.Id}/info", info);
     }
 
@@ -88,9 +90,10 @@ public static class AlbumEndpoints
         if (album is null) return Problems.AlbumNotFound();
         var media = await db.MediaFiles.AsNoTracking().Where(m => m.AlbumId == albumId && m.OwnerId == ownerId).ToListAsync(ct);
 
-        var slides = media.Where(m => m.Collection == MediaCollection.Images)
-            .OrderBy(m => m.TakenAt is null)          // undated last
-            .ThenBy(m => m.TakenAt)
+        // Only photos/videos with a date and a location are shown: the slideshow plays in date order along a route.
+        var images = media.Where(m => m.Collection == MediaCollection.Images).ToList();
+        var slides = images.Where(m => MediaInfoDto.MissingFor(m).Count == 0)
+            .OrderBy(m => m.TakenAt)
             .ThenBy(m => m.FileName, NaturalStringComparer.Instance)
             .ThenBy(m => m.Id)
             .Select(m => MediaInfoDto.From(m, MediaEndpoints.ContentUrl(albumId, "images", m.Id)))
@@ -102,7 +105,7 @@ public static class AlbumEndpoints
             .ToList();
 
         var now = DateTime.UtcNow;
-        var manifest = new AlbumManifestDto(album.Id, album.Name, now, false, slides, music);
+        var manifest = new AlbumManifestDto(album.Id, album.Name, now, false, slides, music, images.Count - slides.Count);
         album.ManifestJson = JsonSerializer.Serialize(manifest, ManifestJson);
         album.CompiledAt = now;
         album.CompiledVersion = album.ContentVersion;

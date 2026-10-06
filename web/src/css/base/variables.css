@@ -10,6 +10,7 @@
   --color-muted: #8b93a0;
   --color-lamp: #f2b84b;        /* accent */
   --color-danger: #f07a6a;
+  --color-ok: #8fcf9a;
   --color-line: rgba(233, 228, 216, .12);
   --color-line-strong: rgba(233, 228, 216, .35);
   --color-map-bg: #d9d4c7;
@@ -30,4 +31,7 @@
   --header-height: 3.5rem;
   --radius-sm: 6px;
   --radius-md: 10px;
+
+  /* Transitions */
+  --transition-fast: .15s ease;
 }

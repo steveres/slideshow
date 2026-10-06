@@ -134,13 +134,12 @@ public static class TestMedia
 
     /// <summary>multipart/form-data body as a browser would send it.</summary>
     public static MultipartFormDataContent Form(byte[] bytes, string fileName, string contentType = "application/octet-stream",
-        string? lastModified = null, int? utcOffsetMinutes = null)
+        int? utcOffsetMinutes = null)
     {
         var form = new MultipartFormDataContent();
         var file = new ByteArrayContent(bytes);
         file.Headers.ContentType = MediaTypeHeaderValue.Parse(contentType);
         form.Add(file, "file", fileName);
-        if (lastModified is not null) form.Add(new StringContent(lastModified), "lastModified");
         if (utcOffsetMinutes is not null) form.Add(new StringContent(utcOffsetMinutes.Value.ToString()), "utcOffsetMinutes");
         return form;
     }

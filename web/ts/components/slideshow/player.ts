@@ -86,7 +86,7 @@ export class Player {
     for (let k = 0; k < missing.length; k += 8) {
       await Promise.all(missing.slice(k, k + 8).map(async i => {
         const item = this.items[i];
-        try { this.locs[i] = await readLocation(await item.getFile(), item.kind); } catch { this.locs[i] = null; }
+        try { this.locs[i] = await this.locationOf(item); } catch { this.locs[i] = null; }
       }));
       if (gen !== this.generation || this.scrubbing) return; // moved on meanwhile
     }
@@ -111,8 +111,9 @@ export class Player {
     const item = this.items[i];
     try {
       const file = await item.getFile();
-      if (this.locs[i] === undefined) this.locs[i] = await readLocation(file, item.kind);
+      if (this.locs[i] === undefined) this.locs[i] = item.location !== undefined ? item.location : await readLocation(file, item.kind);
       if (!live() || !(await this.present(file, item.kind, live))) return;
+      this.prefetch(i + 1);
       if (this.scrubbing) return; // endScrub() takes it from here
       this.updateMap(forward && !!this.locs[i]);
       this.shownAt = performance.now();
@@ -123,6 +124,16 @@ export class Player {
       // Step over the unplayable file in the direction of travel (delay avoids a hot loop).
       this.timer = window.setTimeout(() => (forward ? this.next() : this.previous()), 250);
     }
+  }
+
+  /** Where an item was taken: known by the source, or read from the file. */
+  private async locationOf(item: MediaItem): Promise<LatLon | null> {
+    return item.location !== undefined ? item.location : readLocation(await item.getFile(), item.kind);
+  }
+
+  /** Starts loading the next item so it's ready when its turn comes (sources cache what they load). */
+  private prefetch(i: number): void {
+    if (i < this.items.length) void this.items[i].getFile().catch(() => undefined);
   }
 
   /** The route is the located items from the first up to the current one. */

@@ -25,9 +25,9 @@ public static class MediaEndpoints
         g.MapGet("/", (Guid albumId, HttpContext http, AppDbContext db, CancellationToken ct) => List(albumId, segment, collection, http, db, ct))
             .WithSummary($"Every {what} in the album, in upload order.");
 
-        g.MapPost("/", (Guid albumId, IFormFile? file, [FromForm] string? lastModified, [FromForm] int? utcOffsetMinutes,
+        g.MapPost("/", (Guid albumId, IFormFile? file, [FromForm] int? utcOffsetMinutes,
                 HttpContext http, AppDbContext db, IBlobStore blobs, IOptions<LimitsOptions> limits, ILogger<AppDbContext> log, CancellationToken ct) =>
-                Add(albumId, segment, collection, file, lastModified, utcOffsetMinutes, http, db, blobs, limits.Value, log, ct))
+                Add(albumId, segment, collection, file, utcOffsetMinutes, http, db, blobs, limits.Value, log, ct))
             .WithSummary($"Upload an {what} (multipart/form-data, field \"file\").")
             .DisableAntiforgery() // bearer tokens only, no cookies: nothing for CSRF to ride on
             .Accepts<IFormFile>("multipart/form-data")
@@ -66,19 +66,13 @@ public static class MediaEndpoints
         return Results.Ok(media.Select(m => MediaInfoDto.From(m, ContentUrl(albumId, segment, m.Id))));
     }
 
-    private static async Task<IResult> Add(Guid albumId, string segment, MediaCollection collection, IFormFile? file, string? lastModified, int? utcOffsetMinutes,
+    private static async Task<IResult> Add(Guid albumId, string segment, MediaCollection collection, IFormFile? file, int? utcOffsetMinutes,
         HttpContext http, AppDbContext db, IBlobStore blobs, LimitsOptions limits, ILogger log, CancellationToken ct)
     {
         var ownerId = http.User.UserId();
         if (!await AlbumExists(db, ownerId, albumId, ct)) return Problems.AlbumNotFound();
         if (file is null || file.Length == 0) return Problems.Validation("Send the file as multipart/form-data in a field named \"file\".");
         if (utcOffsetMinutes is < -14 * 60 or > 14 * 60) return Problems.Validation("utcOffsetMinutes must be between -840 and 840.");
-        DateTime? lastModifiedUtc = null;
-        if (!string.IsNullOrWhiteSpace(lastModified))
-        {
-            lastModifiedUtc = ParseTimestamp(lastModified);
-            if (lastModifiedUtc is null) return Problems.Validation("lastModified must be ISO-8601 or Unix milliseconds.");
-        }
 
         await using var content = file.OpenReadStream(); // buffered by ASP.NET Core (to disk when large), so seekable
         var header = new byte[MediaSniffer.HeaderLength];
@@ -100,7 +94,7 @@ public static class MediaEndpoints
 
         var offset = TimeSpan.FromMinutes(utcOffsetMinutes ?? 0);
         var meta = collection == MediaCollection.Images
-            ? MetadataReader.Read(content, sniffed.Kind, offset, lastModifiedUtc)
+            ? MetadataReader.Read(content, sniffed.Kind, offset)
             : new MediaMetadata(null, null, null, null);
 
         var now = DateTime.UtcNow;
@@ -207,11 +201,4 @@ public static class MediaEndpoints
         return name.Length == 0 ? "file" : name;
     }
 
-    /// <summary>Unix milliseconds (JavaScript File.lastModified) or an ISO-8601 timestamp, as UTC.</summary>
-    private static DateTime? ParseTimestamp(string value)
-    {
-        if (long.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out var ms))
-            return ms is > 0 and < 253402300799999 ? DateTimeOffset.FromUnixTimeMilliseconds(ms).UtcDateTime : null;
-        return DateTimeOffset.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var dto) ? dto.UtcDateTime : null;
-    }
 }

@@ -15,9 +15,9 @@ public sealed class AlbumTests(ApiFactory factory) : IClassFixture<ApiFactory>
     }
 
     internal static async Task<JsonElement> UploadAsync(HttpClient client, string album, byte[] bytes, string name,
-        string collection = "images", string? lastModified = null, int? utcOffsetMinutes = null)
+        string collection = "images", int? utcOffsetMinutes = null)
     {
-        var res = await client.PostAsync($"/api/v1/albums/{album}/{collection}", TestMedia.Form(bytes, name, lastModified: lastModified, utcOffsetMinutes: utcOffsetMinutes));
+        var res = await client.PostAsync($"/api/v1/albums/{album}/{collection}", TestMedia.Form(bytes, name, utcOffsetMinutes: utcOffsetMinutes));
         Assert.True(res.StatusCode == HttpStatusCode.Created, $"{res.StatusCode}: {await res.Content.ReadAsStringAsync()}");
         return await res.Content.ReadFromJsonAsync<JsonElement>();
     }
@@ -86,17 +86,19 @@ public sealed class AlbumTests(ApiFactory factory) : IClassFixture<ApiFactory>
     }
 
     [Fact]
-    public async Task Compile_orders_slides_by_date_then_name_with_undated_last()
+    public async Task Compile_orders_slides_by_date_and_leaves_out_those_without_date_or_location()
     {
         var client = await factory.RegisteredClientAsync(Guid.NewGuid().ToString());
         var album = await CreateAlbumAsync(client, "Trip");
 
         // Uploaded out of order on purpose.
         await UploadAsync(client, album, TestMedia.Jpeg(new DateTime(2026, 7, 3, 12, 0, 0), (41.9028, 12.4964)), "rome.jpg");
-        await UploadAsync(client, album, TestMedia.Jpeg(), "IMG_10.jpg");                                           // undated
-        await UploadAsync(client, album, TestMedia.Jpeg(), "IMG_2.jpg");                                            // undated
-        await UploadAsync(client, album, TestMedia.Mp4(new DateTime(2026, 7, 2, 18, 0, 0, DateTimeKind.Utc)), "clip.mp4", utcOffsetMinutes: 120);
+        await UploadAsync(client, album, TestMedia.Jpeg(), "IMG_10.jpg");                                              // no date, no location
+        await UploadAsync(client, album, TestMedia.Jpeg(gps: (48.8566, 2.3522)), "paris-undated.jpg");                 // no date
+        await UploadAsync(client, album, TestMedia.Jpeg(new DateTime(2026, 7, 2, 8, 0, 0)), "nowhere.jpg");            // no location
+        await UploadAsync(client, album, TestMedia.Mp4(new DateTime(2026, 7, 2, 18, 0, 0, DateTimeKind.Utc), "+45.0703+007.6869/"), "clip.mp4", utcOffsetMinutes: 120);
         await UploadAsync(client, album, TestMedia.Jpeg(new DateTime(2026, 7, 1, 9, 0, 0), (45.4642, 9.19)), "milan.jpg");
+        await UploadAsync(client, album, TestMedia.Jpeg(new DateTime(2026, 7, 1, 9, 0, 0), (45.4642, 9.19)), "IMG_2.jpg"); // same time as milan: name breaks the tie
         await UploadAsync(client, album, TestMedia.Mp3(), "song B.mp3", "music");
         await UploadAsync(client, album, TestMedia.Mp3(), "song A.mp3", "music");
 
@@ -105,26 +107,36 @@ public sealed class AlbumTests(ApiFactory factory) : IClassFixture<ApiFactory>
         var manifest = await res.Content.ReadFromJsonAsync<JsonElement>();
 
         var slides = manifest.GetProperty("slides").EnumerateArray().ToList();
-        Assert.Equal(["milan.jpg", "clip.mp4", "rome.jpg", "IMG_2.jpg", "IMG_10.jpg"], slides.Select(s => s.GetProperty("fileName").GetString()));
+        Assert.Equal(["IMG_2.jpg", "milan.jpg", "clip.mp4", "rome.jpg"], slides.Select(s => s.GetProperty("fileName").GetString()));
+        Assert.All(slides, s => Assert.True(s.GetProperty("playable").GetBoolean()));
         Assert.Equal("2026-07-01T09:00:00", slides[0].GetProperty("taken").GetString());
-        Assert.Equal("2026-07-02T20:00:00", slides[1].GetProperty("taken").GetString()); // UTC + uploader's offset
-        Assert.Equal("video", slides[1].GetProperty("kind").GetString());
+        Assert.Equal("2026-07-02T20:00:00", slides[2].GetProperty("taken").GetString()); // UTC + uploader's offset
+        Assert.Equal("video", slides[2].GetProperty("kind").GetString());
         Assert.Equal(45.4642, slides[0].GetProperty("location").GetProperty("lat").GetDouble(), 3);
-        Assert.Equal(JsonValueKind.Null, slides[3].GetProperty("taken").ValueKind);
         Assert.StartsWith($"/api/v1/albums/{album}/images/", slides[0].GetProperty("url").GetString());
+        Assert.Equal(3, manifest.GetProperty("excludedCount").GetInt32());
 
         Assert.Equal(["song A.mp3", "song B.mp3"], manifest.GetProperty("music").EnumerateArray().Select(s => s.GetProperty("fileName").GetString()));
 
         // GET returns the same manifest; it's fresh until the contents change.
         var get = await client.GetFromJsonAsync<JsonElement>($"/api/v1/albums/{album}");
         Assert.False(get.GetProperty("isStale").GetBoolean());
-        Assert.Equal(5, get.GetProperty("slides").GetArrayLength());
+        Assert.Equal(4, get.GetProperty("slides").GetArrayLength());
 
         var info = await client.GetFromJsonAsync<JsonElement>($"/api/v1/albums/{album}/info");
-        Assert.Equal(4, info.GetProperty("imageCount").GetInt32());
+        Assert.Equal(6, info.GetProperty("imageCount").GetInt32());
         Assert.Equal(1, info.GetProperty("videoCount").GetInt32());
         Assert.Equal(2, info.GetProperty("musicCount").GetInt32());
+        Assert.Equal(3, info.GetProperty("excludedCount").GetInt32());
         Assert.False(info.GetProperty("isStale").GetBoolean());
+
+        // The file list says why each left-out file isn't shown.
+        var listed = (await client.GetFromJsonAsync<JsonElement[]>($"/api/v1/albums/{album}/images"))!
+            .ToDictionary(i => i.GetProperty("fileName").GetString()!, i => i.GetProperty("missing").EnumerateArray().Select(m => m.GetString()!).ToArray());
+        Assert.Equal(["date", "location"], listed["IMG_10.jpg"]);
+        Assert.Equal(["date"], listed["paris-undated.jpg"]);
+        Assert.Equal(["location"], listed["nowhere.jpg"]);
+        Assert.Empty(listed["rome.jpg"]);
 
         await UploadAsync(client, album, TestMedia.Jpeg(), "late.jpg");
         Assert.True((await client.GetFromJsonAsync<JsonElement>($"/api/v1/albums/{album}")).GetProperty("isStale").GetBoolean());

@@ -4,3 +4,4 @@
 .start-screen__title { margin: 0; font: 400 clamp(2.4rem, 7vw, 4.2rem)/1.05 var(--font-display); letter-spacing: -.01em; }
 .start-screen__message { margin: 0 0 10px; max-width: 34ch; color: var(--color-muted); }
 .start-screen__actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.start-screen__message a { color: var(--color-lamp); }

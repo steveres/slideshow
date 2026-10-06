@@ -1,7 +1,7 @@
 // The slideshow component: photo frame, controls, timeline, route map, music and settings.
 // It plays whatever SlideshowContents it is given and doesn't know where they came from.
 
-import { FADE_MS, MAX_DURATION } from '../../config.js';
+import { FADE_MS, MAX_DURATION, OVERLAY_IDLE_MS } from '../../config.js';
 import type { SlideshowContents } from '../../media/media-types.js';
 import { clamp, query } from '../../utils/dom.js';
 import { DEFAULTS, loadSettings, saveSettings } from '../../utils/settings.js';
@@ -77,6 +77,7 @@ export function mountSlideshow(root: HTMLElement, options: SlideshowOptions = {}
   player.onState = isPlaying => {
     playing = isPlaying;
     applyMuted();
+    wake();
     playBtn.setAttribute('aria-label', isPlaying ? 'Pause' : 'Play');
     playBtn.querySelector('.icon-pause')?.toggleAttribute('hidden', !isPlaying);
     playBtn.querySelector('.icon-play')?.toggleAttribute('hidden', isPlaying);
@@ -92,7 +93,7 @@ export function mountSlideshow(root: HTMLElement, options: SlideshowOptions = {}
   });
 
   // Settings panel
-  const togglePanel = (open: boolean) => { panel.hidden = !open; gear.setAttribute('aria-expanded', String(open)); };
+  const togglePanel = (open: boolean) => { panel.hidden = !open; gear.setAttribute('aria-expanded', String(open)); wake(); };
   gear.onclick = () => togglePanel(panel.hidden !== false);
   document.addEventListener('keydown', e => { if (e.key === 'Escape') togglePanel(false); });
 
@@ -106,6 +107,25 @@ export function mountSlideshow(root: HTMLElement, options: SlideshowOptions = {}
     options.onChangeSource?.();
   };
 
+  // Auto-hide: after a few seconds without input, fade out the overlays (and the cursor over the photo).
+  // They stay while paused, while the settings panel is open, and while the pointer or keyboard focus is on one.
+  const OVERLAYS = '.controls, .timeline, .settings__toggle, .settings__panel, .slideshow__back';
+  let idleTimer: number | undefined;
+  let pointerOnOverlay = false;
+  function wake(): void {
+    root.classList.remove('slideshow--idle');
+    clearTimeout(idleTimer);
+    idleTimer = window.setTimeout(() => {
+      const focusOnOverlay = !!document.activeElement?.closest(OVERLAYS) && document.activeElement?.matches(':focus-visible');
+      if (active && playing && panel.hidden && !pointerOnOverlay && !focusOnOverlay) root.classList.add('slideshow--idle');
+    }, OVERLAY_IDLE_MS);
+  }
+  root.addEventListener('pointermove', wake);
+  root.addEventListener('pointerdown', wake);
+  root.addEventListener('pointerover', e => { pointerOnOverlay = e.target instanceof Element && !!e.target.closest(OVERLAYS); });
+  root.addEventListener('pointerleave', () => { pointerOnOverlay = false; });
+  document.addEventListener('keydown', wake);
+
   const handle: SlideshowHandle = {
     play({ items, tracks }) {
       active = true;
@@ -113,11 +133,13 @@ export function mountSlideshow(root: HTMLElement, options: SlideshowOptions = {}
       music.start(tracks);
       timeline.setItems(items);
       player.start(items);
+      wake();
     },
     stop() {
       active = false;
       player.stop();
       music.stop();
+      wake();
     },
   };
   return handle;

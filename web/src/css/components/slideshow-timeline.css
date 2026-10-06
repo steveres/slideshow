@@ -1,6 +1,7 @@
 /* css/components/slideshow-timeline.css — scrubber down the left of the photo frame */
 
-.timeline { position: absolute; left: 10px; top: 5%; height: 90%; width: 0; opacity: .45; transition: opacity .2s; }
+/* Starts below the back button (top-left) */
+.timeline { position: absolute; left: 10px; top: calc(max(14px, env(safe-area-inset-top)) + 64px); bottom: 5%; width: 0; opacity: .45; transition: opacity .2s; }
 .timeline:has(.timeline__rail:hover),
 .timeline:focus-within,
 .timeline--dragging { opacity: 1; }

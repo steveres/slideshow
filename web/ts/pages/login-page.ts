@@ -7,7 +7,7 @@ import { mountNavigation } from '../components/navigation.js';
 import { query } from '../utils/dom.js';
 import { errorMessage } from '../utils/format.js';
 
-const returnTo = safeReturnPath(new URLSearchParams(location.search).get('returnTo'));
+const returnTo = safeReturnPath(new URLSearchParams(location.search).get('returnTo'), '/albums.html');
 const card = query(document, '.login');
 const errorEl = query(card, '.login__error');
 const showError = (err: unknown) => { errorEl.textContent = errorMessage(err); errorEl.hidden = false; };

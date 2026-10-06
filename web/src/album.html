@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Album - Slideshow</title>
+
+    <link rel="stylesheet" href="/css/base/reset.css">
+    <link rel="stylesheet" href="/css/base/variables.css">
+    <link rel="stylesheet" href="/css/base/shared.css">
+    <link rel="stylesheet" href="/css/components/navigation.css">
+    <link rel="stylesheet" href="/css/components/album.css">
+
+    <script type="module" src="/js/pages/album-page.js"></script>
+</head>
+<body>
+    <div id="navigation-placeholder"></div>
+
+    <main class="main-content album">
+        <a href="/albums.html" class="album__back">← Albums</a>
+        <p class="album__loading">Loading…</p>
+        <p class="form-error album__error" role="alert" hidden></p>
+
+        <div class="album__body" hidden>
+            <header class="album__header">
+                <div>
+                    <h1 class="album__name"></h1>
+                    <p class="album__description" hidden></p>
+                    <p class="album__summary"></p>
+                </div>
+                <div class="album__actions">
+                    <a class="button button--primary album__play">Play slideshow</a>
+                    <button type="button" class="button button--danger album__delete">Delete album…</button>
+                </div>
+            </header>
+
+            <!-- Upload -->
+            <section class="card upload">
+                <label class="upload__drop">
+                    <input class="upload__input" type="file" multiple
+                           accept="image/jpeg,image/png,image/gif,image/webp,image/avif,image/bmp,video/mp4,video/quicktime,video/webm,video/ogg,.mov,.m4v,audio/mpeg,.mp3">
+                    <span class="upload__prompt"><strong>Drop photos, videos and MP3s here</strong>, or click to choose files.</span>
+                    <span class="upload__hint">Photos and videos appear in the slideshow when they have a capture date and a location (GPS). JPEG, PNG, WebP, AVIF, GIF; MP4, MOV, WebM; MP3 for music.</span>
+                </label>
+                <ul class="upload__queue"></ul>
+            </section>
+
+            <!-- Photos and videos -->
+            <section class="album__section">
+                <h2>Photos and videos</h2>
+                <p class="notice notice--warning album__excluded" hidden></p>
+                <p class="album__none album__none--images" hidden>None yet.</p>
+                <table class="media-table album__images-table" hidden>
+                    <thead><tr><th>File</th><th>Taken</th><th>Location</th><th>Slideshow</th><th class="media-table__size">Size</th><th><span class="visually-hidden">Actions</span></th></tr></thead>
+                    <tbody class="album__images"></tbody>
+                </table>
+            </section>
+
+            <!-- Music -->
+            <section class="album__section">
+                <h2>Music</h2>
+                <p class="album__none album__none--music" hidden>None yet. MP3s play in random order during the slideshow.</p>
+                <table class="media-table album__music-table" hidden>
+                    <thead><tr><th>File</th><th class="media-table__size">Size</th><th><span class="visually-hidden">Actions</span></th></tr></thead>
+                    <tbody class="album__music"></tbody>
+                </table>
+            </section>
+        </div>
+    </main>
+</body>
+</html>

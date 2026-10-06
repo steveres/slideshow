@@ -7,7 +7,7 @@
   "scripts": {
     "build": "node build.mjs",
     "watch": "node build.mjs --watch",
-    "start": "node build.mjs && node server.js",
+    "start": "node build.mjs --serve",
     "dev": "node build.mjs --watch --serve"
   },
   "dependencies": {

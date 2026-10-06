@@ -41,8 +41,21 @@ git-ignored `app.config.local.json`, or pass `APP_CONFIG` as JSON in CI):
   — Microsoft Entra External ID (see [api/README.md](api/README.md) for the tenant setup). Register
   `<site>/login.html` as the SPA redirect URI.
 
-Pages: `index.html` (home), `login.html` (sign in; first sign-in registers the account with the API),
-`account.html` (usage, sign out everywhere, delete account), `slideshow.html` (play a local folder).
+Pages:
+
+| Page | What |
+|---|---|
+| `index.html` | Home |
+| `login.html` | Sign in; the first sign-in registers the account with the API |
+| `albums.html` | Your albums; create one |
+| `album.html?id=…` | Upload photos, videos and MP3s (drag and drop), see which files the slideshow will show, play, delete |
+| `slideshow.html?album=…` | Play an album (compiles it first if it changed) |
+| `slideshow.html` | Play a folder from this computer (no sign-in needed) |
+| `account.html` | Usage, sign out everywhere, delete account |
+
+**What the slideshow shows:** photos and videos that have both a real capture date (EXIF for photos,
+the video's own creation date) and a location (GPS), in date order. Anything missing either is kept in
+the album but left out of the slideshow, and the album page marks it with the reason.
 
 **Playing a local folder:** open http://localhost:3000 in Chrome or Edge and choose the folder. The
 folder and settings are remembered. Optionally run `prepare.bat` on the folder first (drag the folder
@@ -64,9 +77,9 @@ web/
   ts/                           TypeScript source → src/js/, loaded as native ES modules
     pages/                      one entry module per HTML page
     components/                 navigation; slideshow/ (mount, player, map, timeline, zoom, music, folder picker)
-    api/                        api-client (token, errors, 401 → sign in), account-api
+    api/                        api-client (token, errors, 401 → sign in, upload progress), account-api, albums-api
     auth/                       auth (provider interface), dev-auth, entra-auth (MSAL), session (sign in/out flows)
-    media/                      media types, GPS readers, local-folder source
+    media/                      media types, GPS readers, local-folder source, API album source
     utils/                      DOM helpers, settings, formatting
     config.ts                   per-environment settings (generated) + tunable constants
   build.mjs                     tsc + Maps key → ts/generated/
@@ -74,4 +87,5 @@ web/
 ```
 
 `mountSlideshow(element)` plays any `SlideshowContents` (slides + music) it is given; it does not know
-where they come from. Today the folder picker supplies them; next, the albums API will.
+where they come from: the folder picker (`media/folder-source.ts`) or an album on the API
+(`media/api-source.ts`, which downloads each file when needed and prefetches the next).
