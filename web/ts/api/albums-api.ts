@@ -11,6 +11,8 @@ export interface AlbumInfo {
   compiledAt: string | null;
   /** Never compiled, or changed since. */
   isStale: boolean;
+  /** Preview of the album's first photo (in slideshow order), or null. */
+  coverThumbnailUrl: string | null;
 }
 
 export type MissingData = 'date' | 'location';
@@ -27,6 +29,8 @@ export interface MediaInfo {
   missing: MissingData[];
   /** Path of the file's bytes on the API. */
   url: string;
+  /** Path of a small JPEG preview (photos only), or null. */
+  thumbnailUrl: string | null;
 }
 
 export interface AlbumManifest {

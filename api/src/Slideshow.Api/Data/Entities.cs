@@ -36,6 +36,9 @@ public enum MediaKind { Image = 0, Video = 1, Audio = 2 }
 /// <summary>Where the capture date came from. Only real capture dates are used, never file times.</summary>
 public enum TakenSource { Exif = 0, Video = 1 }
 
+/// <summary>Whether a photo's preview has been made. Videos stay None (no thumbnails yet).</summary>
+public enum ThumbnailState { None = 0, Ready = 1, Unavailable = 2 }
+
 public sealed class MediaFile
 {
     public Guid Id { get; set; }
@@ -53,4 +56,5 @@ public sealed class MediaFile
     public TakenSource? TakenSource { get; set; }
     public double? Latitude { get; set; }
     public double? Longitude { get; set; }
+    public ThumbnailState ThumbnailState { get; set; }
 }

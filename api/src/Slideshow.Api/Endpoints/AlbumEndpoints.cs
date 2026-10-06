@@ -40,7 +40,13 @@ public static class AlbumEndpoints
             a.Media.Count(m => m.Collection == MediaCollection.Images && (m.TakenAt == null || m.Latitude == null || m.Longitude == null)),
             a.Media.Sum(m => (long?)m.SizeBytes) ?? 0,
             a.CompiledAt,
-            a.CompiledVersion == null || a.CompiledVersion != a.ContentVersion));
+            a.CompiledVersion == null || a.CompiledVersion != a.ContentVersion,
+            // Cover: first photo in slideshow order, else the first photo uploaded.
+            a.Media.Where(m => m.Kind == MediaKind.Image && m.ThumbnailState != ThumbnailState.Unavailable
+                               && m.TakenAt != null && m.Latitude != null && m.Longitude != null)
+                .OrderBy(m => m.TakenAt).ThenBy(m => m.FileName).Select(m => (Guid?)m.Id).FirstOrDefault()
+            ?? a.Media.Where(m => m.Kind == MediaKind.Image && m.ThumbnailState != ThumbnailState.Unavailable)
+                .OrderBy(m => m.UploadedAt).Select(m => (Guid?)m.Id).FirstOrDefault()));
 
     private static async Task<IResult> List(HttpContext http, AppDbContext db, CancellationToken ct) =>
         Results.Ok(await Infos(db.Albums.Where(a => a.OwnerId == http.User.UserId()).OrderByDescending(a => a.CreatedAt)).ToListAsync(ct));
@@ -65,7 +71,7 @@ public static class AlbumEndpoints
         var album = new Album { Id = Guid.CreateVersion7(), OwnerId = ownerId, Name = name, Description = description, CreatedAt = now, UpdatedAt = now };
         db.Albums.Add(album);
         await db.SaveChangesAsync(ct);
-        var info = new AlbumInfoDto(album.Id, album.Name, album.Description, now, now, 0, 0, 0, 0, 0, null, true);
+        var info = new AlbumInfoDto(album.Id, album.Name, album.Description, now, now, 0, 0, 0, 0, 0, null, true, null);
         return Results.Created($"/api/v1/albums/{album.Id}/info", info);
     }
 

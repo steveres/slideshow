@@ -37,6 +37,8 @@
 .media-table th { text-align: left; font-weight: 500; color: var(--color-muted); padding: var(--spacing-sm); border-bottom: 1px solid var(--color-line-strong); }
 .media-table td { padding: var(--spacing-sm); border-bottom: 1px solid var(--color-line); vertical-align: middle; }
 .media-table__name { overflow-wrap: anywhere; }
+.media-table__preview { width: 72px; padding-right: 0; }
+.thumb--row { width: 56px; height: 56px; }
 .media-table__size { text-align: right; white-space: nowrap; }
 .media-table__missing { color: var(--color-muted); }
 .media-table__row--excluded td { background: rgba(242, 184, 75, .05); }
@@ -44,5 +46,5 @@
 .media-table__delete:hover { color: var(--color-danger); }
 
 @media (max-width: 700px) {
-  .album__images-table th:nth-child(3), .album__images-table td:nth-child(3) { display: none; } /* location column */
+  .album__images-table th:nth-child(4), .album__images-table td:nth-child(4) { display: none; } /* location column */
 }

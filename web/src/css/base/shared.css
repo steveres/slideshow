@@ -35,5 +35,11 @@ a { color: var(--color-lamp); }
 .badge--ok { color: var(--color-ok); background: rgba(143, 207, 154, .12); }
 .badge--warning { color: var(--color-lamp); background: rgba(242, 184, 75, .14); }
 
+/* Photo previews (components/thumbnail.ts): fade in when loaded; placeholder when there's none */
+.thumb { display: grid; place-items: center; overflow: hidden; border-radius: var(--radius-sm); background: var(--color-field); color: var(--color-muted); font-size: 1.2rem; }
+.thumb img { width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity .25s; }
+.thumb--loaded img { opacity: 1; }
+.thumb--failed img { display: none; }
+
 /* Text for screen readers only */
 .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }

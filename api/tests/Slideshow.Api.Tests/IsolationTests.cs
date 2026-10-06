@@ -33,6 +33,7 @@ public sealed class IsolationTests(ApiFactory factory) : IClassFixture<ApiFactor
             (HttpMethod.Get, $"/api/v1/albums/{album}/music"),
             (HttpMethod.Get, imageUrl),
             (HttpMethod.Get, imageUrl + "/info"),
+            (HttpMethod.Get, imageUrl + "/thumbnail"),
             (HttpMethod.Delete, imageUrl),
             (HttpMethod.Get, trackUrl),
             (HttpMethod.Delete, trackUrl),

@@ -1,31 +1,43 @@
 using System.Buffers.Binary;
 using System.Net.Http.Headers;
 using System.Text;
+using SkiaSharp;
 
 namespace Slideshow.Api.Tests.Infrastructure;
 
 /// <summary>Builds small but real-format media files: a JPEG with an EXIF date and GPS, an MP4 with a creation time and location, etc.</summary>
 public static class TestMedia
 {
+    /// <summary>EXIF metadata only, no decodable picture: enough for date/GPS reading, not for thumbnails.</summary>
     public static byte[] Jpeg(DateTime? taken = null, (double Lat, double Lon)? gps = null, int padding = 256)
     {
-        var tiff = Tiff(taken, gps);
-        var app1 = new List<byte> { 0xFF, 0xE1 };
-        var payloadLength = 2 + 6 + tiff.Length;
-        app1.Add((byte)(payloadLength >> 8));
-        app1.Add((byte)payloadLength);
-        app1.AddRange("Exif\0\0"u8.ToArray());
-        app1.AddRange(tiff);
-
         var bytes = new List<byte> { 0xFF, 0xD8 };
-        bytes.AddRange(app1);
+        bytes.AddRange(App1(Tiff(taken, gps, null)));
         bytes.AddRange(Enumerable.Repeat((byte)0, padding)); // stand-in for image data
         bytes.AddRange([0xFF, 0xD9]);
         return [.. bytes];
     }
 
-    /// <summary>Big-endian TIFF: IFD0 → Exif IFD (DateTimeOriginal) and GPS IFD.</summary>
-    private static byte[] Tiff(DateTime? taken, (double Lat, double Lon)? gps)
+    /// <summary>A real, decodable JPEG of width×height pixels, with optional EXIF date, GPS and orientation (1–8).</summary>
+    public static byte[] RealJpeg(int width, int height, DateTime? taken = null, (double Lat, double Lon)? gps = null, int? orientation = null)
+    {
+        using var bitmap = new SKBitmap(width, height);
+        using (var canvas = new SKCanvas(bitmap)) canvas.Clear(new SKColor(0x22, 0xaa, 0x66));
+        using var image = SKImage.FromBitmap(bitmap);
+        var encoded = image.Encode(SKEncodedImageFormat.Jpeg, 85).ToArray();
+        if (taken is null && gps is null && orientation is null) return encoded;
+        // Insert the EXIF segment right after the start-of-image marker.
+        return [.. encoded.AsSpan(0, 2), .. App1(Tiff(taken, gps, orientation)), .. encoded.AsSpan(2)];
+    }
+
+    private static byte[] App1(byte[] tiff)
+    {
+        var length = 2 + 6 + tiff.Length;
+        return [0xFF, 0xE1, (byte)(length >> 8), (byte)length, .. "Exif\0\0"u8.ToArray(), .. tiff];
+    }
+
+    /// <summary>Big-endian TIFF: IFD0 (orientation) → Exif IFD (DateTimeOriginal) and GPS IFD.</summary>
+    private static byte[] Tiff(DateTime? taken, (double Lat, double Lon)? gps, int? orientation)
     {
         var w = new TiffWriter();
         var ifd0 = new List<(ushort Tag, ushort Type, uint Count, Func<uint> Value)>();
@@ -46,6 +58,7 @@ public static class TestMedia
         }
 
         uint exifOffset = 0, gpsOffset = 0;
+        if (orientation is { } o) ifd0.Add((0x0112, 3, 1, () => (uint)o << 16)); // SHORT, left-justified
         if (exifEntries.Count > 0) ifd0.Add((0x8769, 4, 1, () => exifOffset));
         if (gpsEntries.Count > 0) ifd0.Add((0x8825, 4, 1, () => gpsOffset));
 

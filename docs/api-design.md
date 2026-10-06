@@ -12,7 +12,8 @@ Status: v1 (implemented in `api/`). The SPA will be moved onto this API in a lat
 - Cloud-native on Azure, but every Azure dependency sits behind an interface so the API runs and is
   fully tested on a laptop with no cloud resources.
 
-Out of scope for v1: HEIC conversion, thumbnails, video rendering, sharing albums between users.
+Out of scope for v1: HEIC conversion, video thumbnails, video rendering, sharing albums between users.
+Photo previews are made with SkiaSharp (MIT) and stored next to the photo as `{blob}.thumb`.
 
 ## 2. Architecture
 
@@ -125,6 +126,7 @@ Base path `/api/v1`. JSON uses camelCase. Errors are RFC 7807 `application/probl
 | `POST /albums/{albumId}/{collection}` | multipart: `file` (required), `utcOffsetMinutes` (optional: the uploader's UTC offset, to turn a video's UTC creation time into local time like EXIF). `201` + `MediaInfo`. |
 | `GET /albums/{albumId}/{collection}/{id}` | The bytes, with the sniffed `Content-Type`, `Range`/`ETag` support, `Cache-Control: private, immutable`. |
 | `GET /albums/{albumId}/{collection}/{id}/info` | `MediaInfo`. |
+| `GET /albums/{albumId}/images/{id}/thumbnail` | A JPEG preview, at most 400px on its longest edge, upright per EXIF orientation. Made at upload; photos uploaded before previews existed get one on first request. `404 no_thumbnail` for videos and photos that can't be decoded (e.g. AVIF). |
 | `DELETE /albums/{albumId}/{collection}/{id}` | `204`. |
 
 Accepted types (by content, not name): images JPEG, PNG, GIF, WebP, AVIF, BMP; videos MP4/M4V/MOV,
@@ -140,7 +142,8 @@ can carry script).
 // AlbumInfo
 { "id": "guid", "name": "Italy 2026", "description": null, "createdAt": "…Z", "updatedAt": "…Z",
   "imageCount": 80, "videoCount": 4, "musicCount": 3, "excludedCount": 2, "totalBytes": 456789,
-  "compiledAt": "…Z" | null, "isStale": false }      // isStale: never compiled, or changed since
+  "compiledAt": "…Z" | null, "isStale": false,      // isStale: never compiled, or changed since
+  "coverThumbnailUrl": "…/thumbnail" | null }         // first photo in slideshow order, else first uploaded
 
 // MediaInfo
 { "id": "guid", "fileName": "IMG_0001.jpg", "kind": "image" | "video" | "audio",
@@ -148,6 +151,7 @@ can carry script).
   "taken": "2026-07-04T09:31:05" | null,           // local wall-clock time, no zone (as EXIF)
   "takenSource": "exif" | "video" | null,         // only real capture dates; file times are never used
   "location": { "lat": 41.9, "lon": 12.5 } | null,
+  "thumbnailUrl": "/api/v1/albums/…/images/…/thumbnail" | null,   // photos only
   "playable": true,                                // shown in the slideshow (music: always true)
   "missing": [] }                                  // otherwise why not: "date" and/or "location"
 
@@ -166,7 +170,7 @@ Albums     Id (guid v7, PK) · OwnerId → Users · Name · Description · Creat
            ContentVersion · CompiledVersion? · CompiledAt? · ManifestJson?
 MediaFiles Id (guid v7, PK) · AlbumId → Albums (cascade) · OwnerId · Collection (Images|Music)
            Kind · FileName · ContentType · SizeBytes · BlobName · UploadedAt
-           TakenAt? · TakenSource? · Latitude? · Longitude?
+           TakenAt? · TakenSource? · Latitude? · Longitude? · ThumbnailState (None|Ready|Unavailable)
            index (OwnerId, AlbumId, Collection)
 ```
 `ContentVersion` is bumped atomically on every add/delete; an album is stale when it differs from

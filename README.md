@@ -47,8 +47,8 @@ Pages:
 |---|---|
 | `index.html` | Home |
 | `login.html` | Sign in; the first sign-in registers the account with the API |
-| `albums.html` | Your albums; create one |
-| `album.html?id=…` | Upload photos, videos and MP3s (drag and drop), see which files the slideshow will show, play, delete |
+| `albums.html` | Your albums (with cover photos); create one |
+| `album.html?id=…` | Upload photos, videos and MP3s (drag and drop); file list with previews, showing which files the slideshow will show; play; delete |
 | `slideshow.html?album=…` | Play an album (compiles it first if it changed) |
 | `slideshow.html` | Play a folder from this computer (no sign-in needed) |
 | `account.html` | Usage, sign out everywhere, delete account |
@@ -76,7 +76,7 @@ web/
     js/                         compiled from ts/ (git-ignored)
   ts/                           TypeScript source → src/js/, loaded as native ES modules
     pages/                      one entry module per HTML page
-    components/                 navigation; slideshow/ (mount, player, map, timeline, zoom, music, folder picker)
+    components/                 navigation, thumbnail (lazy previews); slideshow/ (mount, player, map, timeline, zoom, music, folder picker)
     api/                        api-client (token, errors, 401 → sign in, upload progress), account-api, albums-api
     auth/                       auth (provider interface), dev-auth, entra-auth (MSAL), session (sign in/out flows)
     media/                      media types, GPS readers, local-folder source, API album source

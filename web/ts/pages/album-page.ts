@@ -3,6 +3,7 @@
 import { AlbumsApi, collectionFor, MediaApi, type AlbumInfo, type Collection, type MediaInfo } from '../api/albums-api.js';
 import { requireSignIn } from '../auth/session.js';
 import { mountNavigation } from '../components/navigation.js';
+import { thumbnail } from '../components/thumbnail.js';
 import { query } from '../utils/dom.js';
 import { albumSummary, errorMessage, formatBytes, formatTaken } from '../utils/format.js';
 
@@ -55,7 +56,11 @@ function imageRow(m: MediaInfo): HTMLTableRowElement {
   badge.className = m.playable ? 'badge badge--ok' : 'badge badge--warning';
   badge.textContent = m.playable ? 'Shown' : `Not shown: ${missingText(m.missing)}`;
   status.append(badge);
+  const preview = document.createElement('td');
+  preview.className = 'media-table__preview';
+  preview.append(thumbnail(m.thumbnailUrl, m.kind, 'thumb--row'));
   tr.append(
+    preview,
     name,
     cell(m.taken ? formatTaken(m.taken) : '—', m.taken ? '' : 'media-table__missing'),
     cell(m.location ? `${m.location.lat.toFixed(4)}, ${m.location.lon.toFixed(4)}` : '—', m.location ? '' : 'media-table__missing'),

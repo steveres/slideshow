@@ -16,28 +16,36 @@ public sealed record AccountDto(string Id, string? DisplayName, string? Email, D
 public sealed record CreateAlbumRequest(string? Name, string? Description);
 
 /// <param name="ExcludedCount">Photos/videos the slideshow leaves out because they have no date or no location.</param>
+/// <param name="CoverId">The photo shown on the album's card: the first in slideshow order, else the first uploaded.</param>
 public sealed record AlbumInfoDto(
     Guid Id, string Name, string? Description, DateTime CreatedAt, DateTime UpdatedAt,
-    int ImageCount, int VideoCount, int MusicCount, int ExcludedCount, long TotalBytes, DateTime? CompiledAt, bool IsStale);
+    int ImageCount, int VideoCount, int MusicCount, int ExcludedCount, long TotalBytes, DateTime? CompiledAt, bool IsStale,
+    [property: JsonIgnore] Guid? CoverId)
+{
+    public string? CoverThumbnailUrl => CoverId is { } c ? $"/api/v1/albums/{Id}/images/{c}/thumbnail" : null;
+}
 
 public sealed record LocationDto(double Lat, double Lon);
 
 /// <param name="Playable">Whether the slideshow shows it. Photos and videos need a date and a location; music always plays.</param>
 /// <param name="Missing">Why it isn't playable: "date" and/or "location".</param>
+/// <param name="ThumbnailUrl">A small JPEG preview (photos only; null when there is none).</param>
 public sealed record MediaInfoDto(
     Guid Id, string FileName, string Kind, string ContentType, long SizeBytes, DateTime UploadedAt,
     [property: JsonConverter(typeof(LocalDateTimeConverter))] DateTime? Taken,
     string? TakenSource, LocationDto? Location, bool Playable, IReadOnlyList<string> Missing,
-    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Url = null)
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Url = null,
+    string? ThumbnailUrl = null)
 {
     public static MediaInfoDto From(MediaFile m, string? url = null)
     {
         var missing = MissingFor(m);
+        var hasThumbnail = url is not null && m.Kind == MediaKind.Image && m.ThumbnailState != ThumbnailState.Unavailable;
         return new(
             m.Id, m.FileName, m.Kind.ToString().ToLowerInvariant(), m.ContentType, m.SizeBytes, m.UploadedAt,
             m.TakenAt, m.TakenSource?.ToString() switch { null => null, var s => char.ToLowerInvariant(s[0]) + s[1..] },
             m.Latitude is { } lat && m.Longitude is { } lon ? new LocationDto(lat, lon) : null,
-            missing.Count == 0, missing, url);
+            missing.Count == 0, missing, url, hasThumbnail ? url + "/thumbnail" : null);
     }
 
     /// <summary>What a slide lacks to be shown: the slideshow plays in date order along a route, so it needs both.</summary>

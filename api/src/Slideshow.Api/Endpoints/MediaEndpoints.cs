@@ -47,6 +47,11 @@ public static class MediaEndpoints
         g.MapDelete("/{id:guid}", (Guid albumId, Guid id, HttpContext http, AppDbContext db, IBlobStore blobs, ILogger<AppDbContext> log, CancellationToken ct) =>
                 Delete(albumId, id, collection, http, db, blobs, log, ct))
             .WithSummary($"Delete the {what}.");
+
+        if (collection == MediaCollection.Images)
+            g.MapGet("/{id:guid}/thumbnail", (Guid albumId, Guid id, HttpContext http, AppDbContext db, IBlobStore blobs, CancellationToken ct) =>
+                    GetThumbnail(albumId, id, http, db, blobs, ct))
+                .WithSummary("A small JPEG preview of a photo (videos have none yet).");
     }
 
     private static Task<MediaFile?> Find(AppDbContext db, string ownerId, Guid albumId, MediaCollection collection, Guid id, CancellationToken ct) =>
@@ -97,6 +102,13 @@ public static class MediaEndpoints
             ? MetadataReader.Read(content, sniffed.Kind, offset)
             : new MediaMetadata(null, null, null, null);
 
+        byte[]? thumbnail = null;
+        if (sniffed.Kind == MediaKind.Image)
+        {
+            content.Position = 0;
+            thumbnail = Thumbnails.TryCreate(content);
+        }
+
         var now = DateTime.UtcNow;
         var media = new MediaFile
         {
@@ -113,6 +125,8 @@ public static class MediaEndpoints
             TakenSource = meta.TakenSource,
             Latitude = meta.Latitude,
             Longitude = meta.Longitude,
+            ThumbnailState = sniffed.Kind != MediaKind.Image ? ThumbnailState.None
+                : thumbnail is null ? ThumbnailState.Unavailable : ThumbnailState.Ready,
             BlobName = "",
         };
         media.BlobName = BlobNames.For(ownerId, albumId, media.Id);
@@ -121,6 +135,8 @@ public static class MediaEndpoints
         await blobs.UploadAsync(media.BlobName, content, media.ContentType, ct);
         try
         {
+            if (thumbnail is not null)
+                await blobs.UploadAsync(BlobNames.Thumbnail(media.BlobName), new MemoryStream(thumbnail), Thumbnails.ContentType, ct);
             var strategy = db.Database.CreateExecutionStrategy();
             await strategy.ExecuteAsync(async () =>
             {
@@ -136,6 +152,7 @@ public static class MediaEndpoints
         catch
         {
             await blobs.DeleteAsync(media.BlobName, CancellationToken.None);
+            if (thumbnail is not null) await blobs.DeleteAsync(BlobNames.Thumbnail(media.BlobName), CancellationToken.None);
             throw;
         }
         log.LogInformation("Stored {Kind} {MediaId} ({Bytes} bytes) in album {AlbumId}", media.Kind, media.Id, media.SizeBytes, albumId);
@@ -159,6 +176,35 @@ public static class MediaEndpoints
             enableRangeProcessing: true);
     }
 
+    /// <summary>The photo's preview; made now (and kept) if it was uploaded before previews existed.</summary>
+    private static async Task<IResult> GetThumbnail(Guid albumId, Guid id, HttpContext http, AppDbContext db, IBlobStore blobs, CancellationToken ct)
+    {
+        var media = await Find(db, http.User.UserId(), albumId, MediaCollection.Images, id, ct);
+        if (media is null) return Problems.MediaNotFound();
+        var noThumbnail = Problems.Of(404, "no_thumbnail", "This file has no preview.");
+        if (media.Kind != MediaKind.Image || media.ThumbnailState == ThumbnailState.Unavailable) return noThumbnail;
+
+        var name = BlobNames.Thumbnail(media.BlobName);
+        var stream = media.ThumbnailState == ThumbnailState.Ready ? await blobs.OpenReadAsync(name, ct) : null;
+        if (stream is null)
+        {
+            byte[]? bytes;
+            await using (var original = await blobs.OpenReadAsync(media.BlobName, ct))
+            {
+                if (original is null) return Problems.MediaNotFound();
+                bytes = Thumbnails.TryCreate(original);
+            }
+            if (bytes is not null) await blobs.UploadAsync(name, new MemoryStream(bytes), Thumbnails.ContentType, ct);
+            var state = bytes is null ? ThumbnailState.Unavailable : ThumbnailState.Ready;
+            await db.MediaFiles.Where(m => m.Id == media.Id).ExecuteUpdateAsync(s => s.SetProperty(m => m.ThumbnailState, state), ct);
+            if (bytes is null) return noThumbnail;
+            stream = new MemoryStream(bytes);
+        }
+
+        http.Response.Headers.CacheControl = "private, max-age=31536000, immutable"; // a photo's preview never changes
+        return Results.Stream(stream, Thumbnails.ContentType, entityTag: new EntityTagHeaderValue($"\"{media.Id:N}-thumb\""));
+    }
+
     private static async Task<IResult> Delete(Guid albumId, Guid id, MediaCollection collection, HttpContext http, AppDbContext db, IBlobStore blobs, ILogger log, CancellationToken ct)
     {
         var media = await Find(db, http.User.UserId(), albumId, collection, id, ct);
@@ -175,7 +221,11 @@ public static class MediaEndpoints
         });
         if (deleted == 0) return Problems.MediaNotFound(); // deleted concurrently
 
-        try { await blobs.DeleteAsync(media.BlobName, ct); }
+        try
+        {
+            await blobs.DeleteAsync(media.BlobName, ct);
+            if (media.Kind == MediaKind.Image) await blobs.DeleteAsync(BlobNames.Thumbnail(media.BlobName), ct);
+        }
         catch (Exception e) when (e is not OperationCanceledException)
         {
             log.LogWarning(e, "Media {MediaId} deleted; its blob was left behind", media.Id);

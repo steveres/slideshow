@@ -21,6 +21,8 @@ public static class BlobNames
     public static string For(string ownerId, Guid albumId, Guid mediaId) => $"{ownerId}/{albumId:N}/{mediaId:N}";
     public static string AlbumPrefix(string ownerId, Guid albumId) => $"{ownerId}/{albumId:N}/";
     public static string UserPrefix(string ownerId) => $"{ownerId}/";
+    /// <summary>A photo's preview, stored next to it (so album and account deletes remove it too).</summary>
+    public static string Thumbnail(string blobName) => blobName + ".thumb";
 }
 
 public sealed class AzureBlobStore : IBlobStore
@@ -78,7 +80,7 @@ public sealed class FileSystemBlobStore(IOptions<StorageOptions> options) : IBlo
     {
         var path = PathFor(name);
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-        await using var file = new FileStream(path, FileMode.CreateNew, FileAccess.Write, FileShare.None, 81920, useAsync: true);
+        await using var file = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.None, 81920, useAsync: true); // overwrites, like Azure
         await content.CopyToAsync(file, ct);
     }
 
@@ -91,7 +93,7 @@ public sealed class FileSystemBlobStore(IOptions<StorageOptions> options) : IBlo
 
     public Task DeleteAsync(string name, CancellationToken ct)
     {
-        File.Delete(PathFor(name));
+        File.Delete(PathFor(name)); // no error if missing, like Azure's DeleteIfExists
         return Task.CompletedTask;
     }
 
