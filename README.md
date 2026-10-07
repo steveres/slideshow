@@ -37,7 +37,7 @@ git-ignored `app.config.local.json`, or pass `APP_CONFIG` as JSON in CI):
   email; each email is a separate user. The API issues the token from `POST /dev/token`, which only
   exists in Development and uses the `dotnet user-jwts` signing key (run `dotnet user-jwts create`
   there once if you haven't).
-- `"auth": { "mode": "entra", "clientId": "<spa-client-id>", "authority": "https://<tenant>.ciamlogin.com/", "apiScope": "api://<api-client-id>/Slideshow.Access" }`
+- `"auth": { "mode": "entra", "clientId": "<spa-client-id>", "authority": "https://<tenant>.ciamlogin.com/<tenant-id>/", "apiScope": "api://<api-client-id>/Slideshow.Access" }`
   — Microsoft Entra External ID (see [api/README.md](api/README.md) for the tenant setup). Register
   `<site>/login.html` as the SPA redirect URI.
 

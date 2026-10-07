@@ -14,7 +14,7 @@ export interface EntraAuthConfig {
   mode: 'entra';
   /** The SPA app registration's client id. */
   clientId: string;
-  /** e.g. https://<tenant-subdomain>.ciamlogin.com/ */
+  /** Including the tenant, e.g. https://<tenant-subdomain>.ciamlogin.com/<tenant-id>/ */
   authority: string;
   /** The API's delegated scope, e.g. api://<api-client-id>/Slideshow.Access */
   apiScope: string;

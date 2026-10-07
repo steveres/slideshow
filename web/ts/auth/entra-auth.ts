@@ -28,6 +28,8 @@ export async function createEntraAuth(): Promise<AuthProvider> {
     auth: {
       clientId: config.clientId,
       authority: config.authority,
+      // External ID hosts (*.ciamlogin.com) aren't in Microsoft's cloud discovery; trust the host directly.
+      knownAuthorities: [new URL(config.authority).host],
       redirectUri: `${location.origin}/login.html`,       // must be registered on the SPA app registration
       postLogoutRedirectUri: `${location.origin}/`,
     },

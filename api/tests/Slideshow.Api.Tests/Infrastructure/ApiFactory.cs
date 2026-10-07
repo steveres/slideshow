@@ -49,6 +49,10 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
             builder.UseSetting("Auth:Authority", "https://login.test/tenant-id/v2.0");
             builder.UseSetting("Auth:Audiences:0", Audience);
         }
+        else
+        {
+            builder.UseSetting("Auth:Authority", ""); // Development tests use only user-jwts tokens: never contact the real tenant
+        }
         builder.UseSetting("Auth:RequiredScope", Scope);
         builder.UseSetting("Cors:AllowedOrigins:0", "https://spa.test");
         foreach (var (k, v) in Settings) builder.UseSetting(k, v);
