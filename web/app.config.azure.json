@@ -1,0 +1,8 @@
+{
+  "auth": {
+    "mode": "entra",
+    "clientId": "40385a56-945b-43ab-9bfc-38337e8c132c",
+    "authority": "https://slideshowmap.ciamlogin.com/ddba6b11-5443-454a-916d-3a9237c12525/",
+    "apiScope": "api://107ba552-513b-4b86-ba0f-e8e1ca1c7afd/Slideshow.Access"
+  }
+}

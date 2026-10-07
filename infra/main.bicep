@@ -1,6 +1,6 @@
-// Slideshow API on Azure: Container Apps + Azure SQL (serverless) + Blob Storage + App Insights.
-// Deploy twice: first with containerImage empty (creates the registry etc.), push the image, then
-// again with containerImage set. See api/README.md.
+// Slideshow on Azure: website on Static Web Apps; API on Container Apps with Azure SQL (serverless),
+// Blob Storage and App Insights. deploy.ps1 runs this twice: first with containerImage empty (creates
+// the registry etc.), then, after pushing the image, with containerImage set. See api/README.md.
 targetScope = 'resourceGroup'
 
 @description('Short name used to derive resource names.')
@@ -9,6 +9,13 @@ targetScope = 'resourceGroup'
 param appName string = 'slideshow'
 
 param location string = resourceGroup().location
+
+@description('Region for Azure SQL. Defaults to location; set another when that region is not accepting new SQL servers.')
+param sqlLocation string = location
+
+@description('Static Web Apps is offered in fewer regions than the rest; pick the closest of them.')
+@allowed(['eastus2', 'centralus', 'westus2', 'westeurope', 'eastasia'])
+param webLocation string = 'eastus2'
 
 @description('Full image reference, e.g. <registry>.azurecr.io/slideshow-api:1. Leave empty to deploy infrastructure only.')
 param containerImage string = ''
@@ -29,7 +36,7 @@ param graphClientId string = ''
 @description('Only if managed-identity federation is not possible: a client secret for the Graph app. Leave empty to use federation.')
 param graphClientSecret string = ''
 
-@description('Origins allowed to call the API from a browser, e.g. https://slideshow.example.com')
+@description('Extra origins allowed to call the API from a browser (the Static Web App is always allowed), e.g. http://localhost:3000')
 param allowedOrigins array = []
 
 @description('Use the Azure SQL free offer (one database per subscription).')
@@ -42,10 +49,11 @@ var names = {
   identity: '${appName}-api-id'
   registry: toLower(replace('${appName}${suffix}', '-', ''))
   storage: take(toLower(replace('${appName}${suffix}', '-', '')), 24)
-  sqlServer: '${appName}-sql-${suffix}'
+  sqlServer: '${appName}-sql-${uniqueString(resourceGroup().id, sqlLocation)}' // region in the hash: a name stays reserved in its first region
   sqlDb: appName
   environment: '${appName}-env'
   app: '${appName}-api'
+  web: '${appName}-web'
 }
 
 // Built-in role definition ids
@@ -151,7 +159,7 @@ resource blobContributor 'Microsoft.Authorization/roleAssignments@2022-04-01' = 
 
 resource sqlServer 'Microsoft.Sql/servers@2023-08-01-preview' = {
   name: names.sqlServer
-  location: location
+  location: sqlLocation
   properties: {
     minimalTlsVersion: '1.2'
     publicNetworkAccess: 'Enabled'
@@ -175,7 +183,7 @@ resource sqlAllowAzure 'Microsoft.Sql/servers/firewallRules@2023-08-01-preview' 
 resource sqlDb 'Microsoft.Sql/servers/databases@2023-08-01-preview' = {
   parent: sqlServer
   name: names.sqlDb
-  location: location
+  location: sqlLocation
   sku: { name: 'GP_S_Gen5_1', tier: 'GeneralPurpose' }
   properties: {
     autoPauseDelay: 60
@@ -203,7 +211,19 @@ resource environment 'Microsoft.App/managedEnvironments@2024-03-01' = {
 
 var sqlConnection = 'Server=tcp:${sqlServer.properties.fullyQualifiedDomainName},1433;Database=${names.sqlDb};Authentication=Active Directory Default;Encrypt=True;Connect Timeout=60'
 
-var corsEnv = [for (origin, i) in allowedOrigins: { name: 'Cors__AllowedOrigins__${i}', value: origin }]
+// ───────────── Website ─────────────
+
+resource web 'Microsoft.Web/staticSites@2023-12-01' = {
+  name: names.web
+  location: webLocation
+  sku: { name: 'Free', tier: 'Free' }
+  properties: {} // content is uploaded by deploy.ps1, not built from a repository
+}
+
+var webOrigin = 'https://${web.properties.defaultHostname}'
+// The website is always allowed (slot 0); any extra origins follow.
+var extraCorsEnv = [for (origin, i) in allowedOrigins: { name: 'Cors__AllowedOrigins__${i + 1}', value: origin }]
+var corsEnv = concat([{ name: 'Cors__AllowedOrigins__0', value: webOrigin }], extraCorsEnv)
 
 var appEnv = concat([
   { name: 'AZURE_CLIENT_ID', value: identity.properties.clientId } // DefaultAzureCredential → this identity
@@ -275,3 +295,5 @@ output registryName string = registry.name
 output identityClientId string = identity.properties.clientId
 output identityPrincipalId string = identity.properties.principalId
 output apiUrl string = empty(containerImage) ? '' : 'https://${app!.properties.configuration.ingress.fqdn}'
+output webName string = web.name
+output webUrl string = webOrigin

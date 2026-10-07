@@ -98,22 +98,29 @@ Done in the [Microsoft Entra admin center](https://entra.microsoft.com).
 
 ## Deploy to Azure
 
-Needs the [Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli) and an Azure
-subscription. Docker is **not** needed; the .NET SDK builds and pushes the image.
+Needs the [Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli), an Azure subscription,
+the .NET 9 SDK and Node.js. Docker is **not** needed; the .NET SDK builds and pushes the image.
 
-1. Fill in [infra/main.bicepparam](../infra/main.bicepparam) with the values from the Entra setup.
+1. Entra values: API side in [infra/main.bicepparam](../infra/main.bicepparam), website side in
+   [web/app.config.azure.json](../web/app.config.azure.json) (already filled in for the Slideshow tenant).
 2. Deploy:
    ```powershell
    az login
-   .\infra\deploy.ps1 -ResourceGroup slideshow-rg -Location westus2
+   .\infra\deploy.ps1 -ResourceGroup slideshow-rg -Location eastus
    ```
-   This creates the resources (first run), builds and pushes the image, deploys it, and prints the
-   API URL. Run it again to ship a new version.
+   It registers the resource providers (first time), creates or updates the resources, builds and
+   pushes the API image, deploys it, then packages the website with production settings (its
+   `app-config.json` points at the deployed API and uses Entra sign-in) and uploads it to Static Web
+   Apps. It prints both addresses. Run it again to ship a new version; `-SkipApi` ships only the website.
+3. First time only: add `<website address>/login.html` as a redirect URI (platform: Single-page
+   application) on the **Slideshow Website** app registration in Entra.
 
-What gets created: Container Apps environment + app (scale 0–3), Azure Container Registry, Storage
-account (private `media` container, shared keys off, 7-day soft delete), Azure SQL serverless database
-(free offer, auto-pause, Entra-only auth), Log Analytics + Application Insights, and a user-assigned
-managed identity with exactly the roles it needs (AcrPull, Storage Blob Data Contributor, SQL admin).
+What gets created: Static Web App (Free plan; `eastus2`, since Static Web Apps isn't offered in every
+region), Container Apps environment + app (scale 0–3), Azure Container Registry, Storage account
+(private `media` container, shared keys off, 7-day soft delete), Azure SQL serverless database (free
+offer, auto-pause, Entra-only auth), Log Analytics + Application Insights, and a user-assigned managed
+identity with exactly the roles it needs (AcrPull, Storage Blob Data Contributor, SQL admin). The
+website's address is always allowed by the API's CORS settings.
 
 Notes
 - The API's managed identity is the SQL server's Entra admin, since it runs the schema migrations on
@@ -122,7 +129,7 @@ Notes
   (then set it back to the identity).
 - The first request after an idle period is slow: the app scales from zero and the database resumes
   from auto-pause. Set `minReplicas: 1` in `main.bicep` to avoid the app cold start (costs more).
-- Set `allowedOrigins` to the SPA's origin(s), or browsers will block its requests.
+- Restrict the Google Maps key to the website's address in the Google Cloud console.
 
 ## Configuration reference
 

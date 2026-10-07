@@ -1,0 +1,15 @@
+{
+  "globalHeaders": {
+    "X-Content-Type-Options": "nosniff",
+    "Referrer-Policy": "strict-origin-when-cross-origin",
+    "X-Frame-Options": "DENY"
+  },
+  "routes": [
+    { "route": "/js/*", "headers": { "Cache-Control": "no-cache" } },
+    { "route": "/css/*", "headers": { "Cache-Control": "no-cache" } }
+  ],
+  "mimeTypes": {
+    ".js": "text/javascript",
+    ".map": "application/json"
+  }
+}

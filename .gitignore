@@ -4,7 +4,7 @@ build/
 
 # Contains the Google Maps API key - never commit
 apikey.txt
-web/ts/generated/
+web/src/app-config.json
 
 # Website build output (compiled from web/ts; vendor files copied from node_modules)
 web/src/js/

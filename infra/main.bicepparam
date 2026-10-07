@@ -1,9 +1,13 @@
 using 'main.bicep'
 
-// Fill these in from your Entra External ID tenant (see api/README.md, "Set up Entra External ID").
-param authAuthority = 'https://<tenant-subdomain>.ciamlogin.com/<external-tenant-id>/v2.0'
-param apiClientId = '<api-app-client-id>'
-param externalTenantId = '<external-tenant-id>'
+// Entra External ID tenant "Slideshow" (slideshowmap.onmicrosoft.com). None of these are secrets.
+param authAuthority = 'https://slideshowmap.ciamlogin.com/ddba6b11-5443-454a-916d-3a9237c12525/v2.0'
+param apiClientId = '107ba552-513b-4b86-ba0f-e8e1ca1c7afd'   // "Slideshow API" app registration
+param externalTenantId = 'ddba6b11-5443-454a-916d-3a9237c12525'
 param graphClientId = ''          // set once the Graph app is set up; empty = skip Entra-side delete/revoke
-param allowedOrigins = []         // e.g. ['https://slideshow.example.com', 'http://localhost:5173']
+
+// The website (Static Web App) is always allowed; add more origins here if needed.
+param allowedOrigins = []
+param webLocation = 'eastus2'      // Static Web Apps region (not offered in eastus)
+param sqlLocation = 'centralus'    // new subscriptions can't create SQL servers in eastus/eastus2 (checked October 2026)
 param useSqlFreeLimit = true
