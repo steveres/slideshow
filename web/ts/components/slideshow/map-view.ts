@@ -11,6 +11,7 @@ interface GLatLng { lat(): number; lng(): number; }
 interface GMapView { center: { lat: number; lng: number }; zoom: number; }
 interface GMap {
   moveCamera(o: GMapView): void; // immediate, no built-in animation
+  setOptions(o: Record<string, unknown>): void;
   getZoom(): number | undefined;
   getCenter(): GLatLng | undefined;
 }
@@ -45,6 +46,25 @@ function loadGoogleMaps(): Promise<GMaps> {
     document.head.append(script);
   });
   return mapsApi;
+}
+
+// ───────── Controls ─────────
+
+/** Phones and tablets: touch screens, or narrow windows. */
+const mobile = window.matchMedia('(pointer: coarse), (max-width: 768px)');
+
+/** Google's map controls: none on mobile (drag and pinch still work); zoom buttons and a layers menu otherwise. */
+function controlOptions(maps: GMaps): Record<string, unknown> {
+  if (mobile.matches) return { disableDefaultUI: true, zoomControl: false, mapTypeControl: false };
+  return {
+    disableDefaultUI: true, zoomControl: true,
+    // Layers control: a dropdown, since the panel is narrow
+    mapTypeControl: true,
+    mapTypeControlOptions: {
+      mapTypeIds: ['roadmap', 'terrain', 'satellite', 'hybrid'],
+      style: maps.MapTypeControlStyle?.DROPDOWN_MENU ?? 2,
+    },
+  };
 }
 
 // ───────── Projection ─────────
@@ -207,16 +227,11 @@ export class MapView {
     const c = unproject(initial.centre);
     const gmap = this.gmap = new maps.Map(this.canvas, {
       center: { lat: c.lat, lng: c.lon }, zoom: initial.zoom, isFractionalZoomEnabled: true,
-      disableDefaultUI: true, zoomControl: true,
-      // Layers control: a dropdown, since the panel is narrow
-      mapTypeControl: true,
-      mapTypeControlOptions: {
-        mapTypeIds: ['roadmap', 'terrain', 'satellite', 'hybrid'],
-        style: maps.MapTypeControlStyle?.DROPDOWN_MENU ?? 2,
-      },
-      gestureHandling: 'greedy', // drag to pan, wheel or buttons to zoom
+      ...controlOptions(maps),
+      gestureHandling: 'greedy', // drag to pan; wheel, pinch or buttons to zoom
       keyboardShortcuts: false, clickableIcons: false,
     });
+    mobile.addEventListener('change', () => gmap.setOptions(controlOptions(maps))); // e.g. window resized
     maps.event.addListener(gmap, 'zoom_changed', () => this.onGoogleCamera());
     maps.event.addListener(gmap, 'center_changed', () => this.onGoogleCamera());
   }

@@ -13,6 +13,12 @@ export function formatDate(taken: string | undefined): string | null {
   return m && month ? `${month} ${m[3]}, ${m[1]}` : null;
 }
 
+/** "2026-07-04 09:31:05" -> "07/04" (the timeline's labels; the full date is kept for screen readers). */
+export function formatShortDate(taken: string | undefined): string | null {
+  const m = taken ? /^\d{4}-(\d{2})-(\d{2})/.exec(taken) : null;
+  return m ? `${m[1]}/${m[2]}` : null;
+}
+
 export class Timeline {
   private rail: HTMLElement;
   private thumb: HTMLElement;
@@ -67,7 +73,7 @@ export class Timeline {
     this.labels.replaceChildren(...Array.from({ length: count }, (_, k) => {
       const i = count > 1 ? Math.round(k * last / (count - 1)) : 0;
       const label = document.createElement('span');
-      label.textContent = this.describe(i);
+      label.textContent = formatShortDate(this.items[i]?.taken) ?? `#${i + 1}`;
       label.style.top = `${count > 1 ? k / (count - 1) * 100 : 0}%`;
       return label;
     }));
