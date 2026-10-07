@@ -2,6 +2,8 @@
 
 /* Starts below the back button (top-left) */
 .timeline { position: absolute; left: 10px; top: calc(max(14px, env(safe-area-inset-top)) + 64px); bottom: 5%; width: 0; opacity: .45; transition: opacity .2s; }
+/* Narrow screens: the control bar spans nearly the full width, so end the timeline above it */
+@media (max-width: 700px) { .timeline { bottom: calc(max(16px, env(safe-area-inset-bottom)) + 72px); } }
 .timeline:has(.timeline__rail:hover),
 .timeline:focus-within,
 .timeline--dragging { opacity: 1; }

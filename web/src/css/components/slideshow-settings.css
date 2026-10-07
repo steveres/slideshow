@@ -13,4 +13,11 @@
 .settings__row { display: flex; gap: 10px; }
 .settings__row button { flex: 1; }
 
+/* Phone held sideways: the map is a card in the top-right corner, so the gear sits just left of it
+   and the panel opens under the gear. (Other layouts: the gear stays in the corner.) */
+@media (orientation: landscape) and (max-height: 500px) {
+  .slideshow:not(.slideshow--no-map) .settings__toggle,
+  .slideshow:not(.slideshow--no-map) .settings__panel { right: calc(var(--edge) + var(--map-width) + 10px); }
+}
+
 @media (prefers-reduced-motion: reduce) { .slideshow .settings__toggle { transition: none; } }

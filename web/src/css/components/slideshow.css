@@ -1,13 +1,19 @@
 /* css/components/slideshow.css
-   Layout: photos on the left (75%), map on the right (25%); neither scrolls. */
+   Three layouts, by screen shape (the map's own rules are in route-map.css):
+     desktop (default)          photo and map side by side: photo 75%, map 25%
+     phone held upright         photo on top (60% of the height), map below (40%), both full width
+     phone held sideways        photo fills the screen; the map is a portrait card in the top-right corner
+   Controls, timeline and buttons float above the photo. Nothing scrolls. */
 
 .slideshow {
   --fade: 1000ms; /* overwritten from script so timing has one source */
+  --edge: 14px;   /* gap between floating elements and the frame's edge */
   position: relative;
   height: 100%;
   overflow: hidden;
   display: grid;
   grid-template-columns: 3fr 1fr;
+  grid-template-rows: 100%;
   background: var(--color-stage);
   color: var(--color-paper);
   font: 16px/1.45 var(--font-ui);
@@ -16,7 +22,25 @@
 .slideshow--no-map .route-map { display: none; }
 
 /* Photo frame with two stacked, cross-faded layers */
-.slideshow__photos { position: relative; min-width: 0; overflow: hidden; }
+.slideshow__photos { position: relative; min-width: 0; min-height: 0; overflow: hidden; }
+
+/* Phone held upright: photo on top, map below */
+@media (orientation: portrait) and (max-width: 768px) {
+  .slideshow { grid-template-columns: 1fr; grid-template-rows: 60% 40%; }
+  .slideshow--no-map { grid-template-rows: 100%; }
+}
+
+/* Phone held sideways: photo fills the screen, map inset top-right.
+   Map card: 20% of the screen's width and 1.5x as tall (20:30), at least 160px wide, at most 60% of the height. */
+@media (orientation: landscape) and (max-height: 500px) {
+  .slideshow {
+    display: block;
+    --map-width: clamp(160px, 20vw, 420px);
+    --map-height: min(calc(var(--map-width) * 1.5), 60vh);
+  }
+  .slideshow__photos { position: absolute; inset: 0; }
+}
+
 .slideshow__photos--zoomed { cursor: grab; }
 .slideshow__photos--zoomed:active { cursor: grabbing; }
 .slideshow__photos--scrubbing .slideshow__layer { transition: none; }

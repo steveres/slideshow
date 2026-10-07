@@ -18,7 +18,6 @@ interface GMap {
 interface GMaps {
   Map: new (el: HTMLElement, opts: GMapView & Record<string, unknown>) => GMap;
   event: { addListener(map: GMap, event: string, fn: () => void): unknown };
-  MapTypeControlStyle?: { DROPDOWN_MENU: number };
 }
 interface GoogleWindow { google?: { maps: GMaps }; __mapsReady?: () => void; gm_authFailure?: () => void; }
 const gWindow = window as unknown as GoogleWindow;
@@ -50,22 +49,11 @@ function loadGoogleMaps(): Promise<GMaps> {
 
 // ───────── Controls ─────────
 
-/** Phones and tablets: touch screens, or narrow windows. */
-const mobile = window.matchMedia('(pointer: coarse), (max-width: 768px)');
+/** The phone layouts (same rules as slideshow.css): upright, or sideways with the map as a small card. */
+const phoneLayout = window.matchMedia('(orientation: portrait) and (max-width: 768px), (orientation: landscape) and (max-height: 500px)');
 
-/** Google's map controls: none on mobile (drag and pinch still work); zoom buttons and a layers menu otherwise. */
-function controlOptions(maps: GMaps): Record<string, unknown> {
-  if (mobile.matches) return { disableDefaultUI: true, zoomControl: false, mapTypeControl: false };
-  return {
-    disableDefaultUI: true, zoomControl: true,
-    // Layers control: a dropdown, since the panel is narrow
-    mapTypeControl: true,
-    mapTypeControlOptions: {
-      mapTypeIds: ['roadmap', 'terrain', 'satellite', 'hybrid'],
-      style: maps.MapTypeControlStyle?.DROPDOWN_MENU ?? 2,
-    },
-  };
-}
+/** Desktop: zoom buttons only (no map-type menu). Phones: no controls; drag and pinch still work. */
+const controlOptions = (): Record<string, unknown> => ({ disableDefaultUI: true, zoomControl: !phoneLayout.matches });
 
 // ───────── Projection ─────────
 
@@ -227,11 +215,11 @@ export class MapView {
     const c = unproject(initial.centre);
     const gmap = this.gmap = new maps.Map(this.canvas, {
       center: { lat: c.lat, lng: c.lon }, zoom: initial.zoom, isFractionalZoomEnabled: true,
-      ...controlOptions(maps),
+      ...controlOptions(),
       gestureHandling: 'greedy', // drag to pan; wheel, pinch or buttons to zoom
       keyboardShortcuts: false, clickableIcons: false,
     });
-    mobile.addEventListener('change', () => gmap.setOptions(controlOptions(maps))); // e.g. window resized
+    phoneLayout.addEventListener('change', () => gmap.setOptions(controlOptions())); // rotated or resized
     maps.event.addListener(gmap, 'zoom_changed', () => this.onGoogleCamera());
     maps.event.addListener(gmap, 'center_changed', () => this.onGoogleCamera());
   }

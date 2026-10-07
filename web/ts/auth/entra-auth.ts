@@ -55,7 +55,9 @@ export async function createEntraAuth(): Promise<AuthProvider> {
       if (location.pathname !== '/login.html') { location.assign(loginUrl(returnTo)); return; }
       // After Entra, MSAL lands on redirectUri and then returns to this exact URL
       // (login.html?returnTo=...), so the login page still knows where to go next.
-      await app.loginRedirect({ scopes });
+      // prompt 'login': always show the sign-in page. Otherwise Entra may try a Microsoft account the
+      // browser is already signed in to (e.g. the tenant's admin) and fail with AADSTS50020.
+      await app.loginRedirect({ scopes, prompt: 'login' });
     },
 
     async signOut() {
