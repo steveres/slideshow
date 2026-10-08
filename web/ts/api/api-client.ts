@@ -12,7 +12,7 @@ export class ApiError extends Error {
 }
 
 interface RequestOptions {
-  method?: 'GET' | 'POST' | 'DELETE';
+  method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
   json?: unknown;
   form?: FormData;
   /** Don't send the user to sign in on 401 (the caller handles it). */
@@ -66,6 +66,22 @@ export const api = {
   /** Downloads a file (e.g. an image) as a Blob. */
   async blob(path: string): Promise<Blob> {
     return (await send(path)).blob();
+  },
+
+  async put<T>(path: string, json: unknown): Promise<T> {
+    return (await send(path, { method: 'PUT', json })).json() as Promise<T>;
+  },
+  /** GET without signing in (share links). */
+  async publicGet<T>(path: string): Promise<T> {
+    const res = await fetch(`${APP_CONFIG.apiBaseUrl}${path}`);
+    if (!res.ok) throw await failure(res.status, await res.text(), true);
+    return res.json() as Promise<T>;
+  },
+  /** Downloads a file without signing in (share links). */
+  async publicBlob(path: string): Promise<Blob> {
+    const res = await fetch(`${APP_CONFIG.apiBaseUrl}${path}`);
+    if (!res.ok) throw await failure(res.status, await res.text(), true);
+    return res.blob();
   },
 
   /** Uploads a multipart form, reporting progress (0..1). fetch can't report upload progress, so this uses XHR. */

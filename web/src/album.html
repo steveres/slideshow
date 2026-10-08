@@ -34,9 +34,27 @@
                 </div>
                 <div class="album__actions">
                     <a class="button button--primary album__play">Play slideshow</a>
+                    <button type="button" class="button album__share-toggle" aria-expanded="false" aria-controls="album-share">Share…</button>
                     <button type="button" class="button button--danger album__delete">Delete album…</button>
                 </div>
             </header>
+
+            <!-- Share: anyone with the link can watch the slideshow -->
+            <section class="card share" id="album-share" hidden>
+                <h2 class="share__title">Share this slideshow</h2>
+                <label class="share__switch"><input type="checkbox" class="share__enabled"> Anyone with the link can watch</label>
+                <div class="share__details" hidden>
+                    <div class="share__link-row">
+                        <input class="share__link" type="text" readonly aria-label="Share link">
+                        <button type="button" class="button button--primary share__copy">Copy link</button>
+                        <button type="button" class="button share__native" hidden>Share…</button>
+                    </div>
+                    <label class="share__switch"><input type="checkbox" class="share__map"> Show the map to viewers</label>
+                    <p class="share__note">Viewers see only the slideshow: the photos and videos in it, and the music. They can't see anything else in your account, or change anything. Photo files can still contain the location where they were taken.</p>
+                    <button type="button" class="button button--quiet share__reset">Get a new link (the current one stops working)</button>
+                </div>
+                <p class="form-error share__error" role="alert" hidden></p>
+            </section>
 
             <!-- Upload -->
             <section class="card upload">

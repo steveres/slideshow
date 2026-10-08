@@ -3,6 +3,7 @@
 import { AlbumsApi, collectionFor, MediaApi, type AlbumInfo, type Collection, type MediaInfo } from '../api/albums-api.js';
 import { requireSignIn } from '../auth/session.js';
 import { mountNavigation } from '../components/navigation.js';
+import { mountSharePanel } from '../components/share-panel.js';
 import { thumbnail } from '../components/thumbnail.js';
 import { query } from '../utils/dom.js';
 import { albumSummary, errorMessage, formatBytes, formatTaken } from '../utils/format.js';
@@ -193,6 +194,11 @@ drop.addEventListener('drop', e => {
   drop.classList.remove('upload__drop--over');
   void uploadAll(Array.from(e.dataTransfer?.files ?? []));
 });
+
+// ───────── Share ─────────
+
+if (albumId) mountSharePanel(query(page, '.share'), query<HTMLButtonElement>(page, '.album__share-toggle'), albumId,
+  () => query(page, '.album__name').textContent ?? 'Slideshow');
 
 // ───────── Delete album ─────────
 

@@ -164,11 +164,17 @@ public static class MediaEndpoints
     {
         var media = await Find(db, http.User.UserId(), albumId, collection, id, ct);
         if (media is null) return Problems.MediaNotFound();
+        return await StreamAsync(http, blobs, media, "private, max-age=31536000, immutable", ct); // a media id's bytes never change
+    }
+
+    /// <summary>Sends a file's bytes (Range requests supported).</summary>
+    internal static async Task<IResult> StreamAsync(HttpContext http, IBlobStore blobs, MediaFile media, string cacheControl, CancellationToken ct)
+    {
         var stream = await blobs.OpenReadAsync(media.BlobName, ct);
         if (stream is null) return Problems.MediaNotFound();
 
         var headers = http.Response.Headers;
-        headers.CacheControl = "private, max-age=31536000, immutable"; // a media id's bytes never change
+        headers.CacheControl = cacheControl;
         headers.ContentDisposition = new ContentDispositionHeaderValue("inline") { FileNameStar = media.FileName }.ToString();
         return Results.Stream(stream, media.ContentType,
             lastModified: DateTime.SpecifyKind(media.UploadedAt, DateTimeKind.Utc),

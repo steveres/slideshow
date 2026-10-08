@@ -14,6 +14,8 @@ import { Timeline } from './timeline.js';
 export interface SlideshowOptions {
   /** The settings panel's "change" button was pressed (e.g. go back to choosing a folder or album). */
   onChangeSource?: () => void;
+  /** False hides the map whatever the viewer's setting (a shared album whose owner hid it). Default true. */
+  mapAllowed?: boolean;
 }
 
 export interface SlideshowHandle {
@@ -32,7 +34,9 @@ export function mountSlideshow(root: HTMLElement, options: SlideshowOptions = {}
   const music = new MusicPlayer();
   let active = false; // something is loaded and playing (or paused)
 
-  const applyMapVisibility = () => { root.classList.toggle('slideshow--no-map', !settings.showMap); player.syncMap(); };
+  const mapAllowed = options.mapAllowed ?? true;
+  const applyMapVisibility = () => { root.classList.toggle('slideshow--no-map', !(settings.showMap && mapAllowed)); player.syncMap(); };
+  if (!mapAllowed) query(root, '.settings__show-map').closest('label')!.hidden = true;
   applyMapVisibility();
 
   const photoZoom = new PhotoZoom(photos, () => player.currentMedia(), () => player.setPlaying(false)); // zooming in pauses

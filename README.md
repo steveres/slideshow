@@ -50,6 +50,7 @@ Pages:
 | `albums.html` | Your albums (with cover photos); create one |
 | `album.html?id=…` | Upload photos, videos and MP3s (drag and drop); file list with previews, showing which files the slideshow will show; play; delete |
 | `slideshow.html?album=…` | Play an album (compiles it first if it changed) |
+| `slideshow.html?share=…` | Play a shared album: anyone with the link, no sign-in (album page → **Share…**) |
 | `slideshow.html` | Play a folder from this computer (no sign-in needed) |
 | `account.html` | Usage, sign out everywhere, delete account |
 

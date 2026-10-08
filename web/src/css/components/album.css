@@ -14,6 +14,18 @@
 .album__section { margin-top: var(--spacing-xl); }
 .album__section h2 { font: 400 1.5rem var(--font-display); margin: 0 0 var(--spacing-md); }
 
+/* Share panel */
+.share { margin-bottom: var(--spacing-lg); display: grid; gap: var(--spacing-md); }
+.share__title { font: 400 1.4rem var(--font-display); margin: 0; }
+.share__switch { display: flex; align-items: center; gap: var(--spacing-sm); cursor: pointer; }
+.share__switch input { width: 20px; height: 20px; accent-color: var(--color-lamp); }
+.share__details { display: grid; gap: var(--spacing-md); }
+.share__link-row { display: flex; flex-wrap: wrap; gap: var(--spacing-sm); }
+.share__link { flex: 1 1 320px; min-width: 0; font: inherit; font-size: .9rem; color: var(--color-paper); background: var(--color-field); border: 1px solid var(--color-line-strong); border-radius: var(--radius-sm); padding: 10px 12px; }
+.share__note { margin: 0; color: var(--color-muted); font-size: .9rem; max-width: 70ch; }
+.share__reset { justify-self: start; color: var(--color-muted); }
+.share__reset:hover { color: var(--color-paper); }
+
 /* Upload */
 .upload__drop { position: relative; display: grid; gap: var(--spacing-xs); justify-items: center; text-align: center; padding: var(--spacing-xl) var(--spacing-md); border: 2px dashed var(--color-line-strong); border-radius: var(--radius-md); cursor: pointer; transition: border-color var(--transition-fast), background var(--transition-fast); }
 .upload__drop:hover, .upload__drop--over { border-color: var(--color-lamp); background: rgba(242, 184, 75, .06); }

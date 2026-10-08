@@ -10,7 +10,7 @@ namespace Slideshow.Api.Endpoints;
 
 public static class AlbumEndpoints
 {
-    private static readonly JsonSerializerOptions ManifestJson = new(JsonSerializerDefaults.Web);
+    internal static readonly JsonSerializerOptions ManifestJson = new(JsonSerializerDefaults.Web);
 
     public static void MapAlbums(this RouteGroupBuilder api, long maxUploadBytes)
     {
@@ -22,6 +22,7 @@ public static class AlbumEndpoints
         g.MapGet("/{albumId:guid}/info", GetInfo).WithSummary("Album details and counts.");
         g.MapPost("/{albumId:guid}/compile", Compile).WithSummary("Order the slides by date taken and store the manifest.");
         g.MapDelete("/{albumId:guid}", Delete).WithSummary("Delete the album with its images and music.");
+        SharingEndpoints.MapOwner(g);
 
         MediaEndpoints.MapCollection(g, "images", MediaCollection.Images, maxUploadBytes);
         MediaEndpoints.MapCollection(g, "music", MediaCollection.Music, maxUploadBytes);
@@ -41,6 +42,7 @@ public static class AlbumEndpoints
             a.Media.Sum(m => (long?)m.SizeBytes) ?? 0,
             a.CompiledAt,
             a.CompiledVersion == null || a.CompiledVersion != a.ContentVersion,
+            a.ShareToken != null,
             // Cover: first photo in slideshow order, else the first photo uploaded.
             a.Media.Where(m => m.Kind == MediaKind.Image && m.ThumbnailState != ThumbnailState.Unavailable
                                && m.TakenAt != null && m.Latitude != null && m.Longitude != null)
@@ -71,7 +73,7 @@ public static class AlbumEndpoints
         var album = new Album { Id = Guid.CreateVersion7(), OwnerId = ownerId, Name = name, Description = description, CreatedAt = now, UpdatedAt = now };
         db.Albums.Add(album);
         await db.SaveChangesAsync(ct);
-        var info = new AlbumInfoDto(album.Id, album.Name, album.Description, now, now, 0, 0, 0, 0, 0, null, true, null);
+        var info = new AlbumInfoDto(album.Id, album.Name, album.Description, now, now, 0, 0, 0, 0, 0, null, true, false, null);
         return Results.Created($"/api/v1/albums/{album.Id}/info", info);
     }
 
@@ -94,7 +96,14 @@ public static class AlbumEndpoints
         // Read the version before the media: anything added meanwhile leaves the album marked stale.
         var album = await db.Albums.FirstOrDefaultAsync(a => a.Id == albumId && a.OwnerId == ownerId, ct);
         if (album is null) return Problems.AlbumNotFound();
-        var media = await db.MediaFiles.AsNoTracking().Where(m => m.AlbumId == albumId && m.OwnerId == ownerId).ToListAsync(ct);
+        return Results.Ok(await CompileAsync(db, album, ct));
+    }
+
+    /// <summary>Orders the album's playable slides and stores the manifest. `album` must be tracked by `db`.</summary>
+    internal static async Task<AlbumManifestDto> CompileAsync(AppDbContext db, Album album, CancellationToken ct)
+    {
+        var albumId = album.Id;
+        var media = await db.MediaFiles.AsNoTracking().Where(m => m.AlbumId == albumId && m.OwnerId == album.OwnerId).ToListAsync(ct);
 
         // Only photos/videos with a date and a location are shown: the slideshow plays in date order along a route.
         var images = media.Where(m => m.Collection == MediaCollection.Images).ToList();
@@ -116,7 +125,7 @@ public static class AlbumEndpoints
         album.CompiledAt = now;
         album.CompiledVersion = album.ContentVersion;
         await db.SaveChangesAsync(ct); // writes only the three compile columns
-        return Results.Ok(manifest);
+        return manifest;
     }
 
     private static async Task<IResult> Delete(Guid albumId, HttpContext http, AppDbContext db, IBlobStore blobs, ILogger<AppDbContext> log, CancellationToken ct)

@@ -133,6 +133,19 @@ Accepted types (by content, not name): images JPEG, PNG, GIF, WebP, AVIF, BMP; v
 WebM, Ogg; music MP3. HEIC/HEIF and SVG are rejected (HEIC isn't displayable in most browsers; SVG
 can carry script).
 
+### Sharing (anyone with the link can watch)
+| Method & path | Result |
+|---|---|
+| `GET /albums/{albumId}/share` | `{ enabled, token, showMap }`; `token` is the secret code in the share link (null when not shared). |
+| `PUT /albums/{albumId}/share` `{ enabled?, showMap? }` | Turn link sharing on/off (turning it on again issues a new code); choose whether viewers see the map. |
+| `POST /albums/{albumId}/share/reset` | New code; the old link stops working. `409 album_not_shared` if sharing is off. |
+| `GET /shared/{token}` | **No sign-in.** `{ name, showMap, slides, music }`: the current slideshow (compiled on demand), with file URLs under `/shared/{token}/…`; locations removed when `showMap` is false. |
+| `GET /shared/{token}/images/{id}`, `GET /shared/{token}/music/{id}` | **No sign-in.** Only files in the slideshow (photos without a date or location stay private). |
+
+The code is 128 random bits (22 URL-safe characters), unrelated to the album id. Wrong, revoked and
+malformed codes all return `404 share_not_found`. Viewers can't list files, see other albums or change
+anything; anonymous requests are rate-limited per IP address like everyone else's.
+
 ### Shapes
 ```jsonc
 // Account

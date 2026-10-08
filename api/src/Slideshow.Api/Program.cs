@@ -109,6 +109,7 @@ app.MapGet("/healthz", () => Results.Ok(new { status = "ok" })).AllowAnonymous()
 var api = app.MapGroup("/api/v1").RequireAuthorization(Auth.ApiPolicy);
 api.MapAccount();
 api.MapAlbums(app.Services.GetRequiredService<IOptions<LimitsOptions>>().Value.MaxUploadBytes);
+app.MapGroup("/api/v1/shared").AllowAnonymous().MapShared(); // share links: no sign-in
 
 app.Run();
 

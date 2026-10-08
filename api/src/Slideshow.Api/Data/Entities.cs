@@ -24,6 +24,10 @@ public sealed class Album
     public int? CompiledVersion { get; set; }
     public DateTime? CompiledAt { get; set; }
     public string? ManifestJson { get; set; }
+    /// <summary>Link sharing: the secret code in the album's share link; null when not shared.</summary>
+    public string? ShareToken { get; set; }
+    /// <summary>Viewers of the share link don't see the map (or the photos' locations). Default: they do.</summary>
+    public bool ShareHideMap { get; set; }
 
     public List<MediaFile> Media { get; set; } = [];
 }

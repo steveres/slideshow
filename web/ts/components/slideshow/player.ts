@@ -155,7 +155,7 @@ export class Player {
 
   /** The route is the located items from the first up to the current one. */
   private updateMap(grow: boolean): void {
-    if (!this.settings.showMap || !this.items.length) return;
+    if (!this.settings.showMap || !this.items.length || this.layers[0].closest('.slideshow--no-map')) return;
     const path = this.locs.slice(0, this.index + 1).filter((l): l is LatLon => !!l);
     void this.map.update(path, grow);
   }

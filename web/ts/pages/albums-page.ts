@@ -42,6 +42,12 @@ function card(a: AlbumInfo): HTMLLIElement {
   const meta = document.createElement('p');
   meta.className = 'album-card__meta';
   meta.textContent = `Updated ${formatDay(a.updatedAt)}`;
+  if (a.isShared) {
+    const shared = document.createElement('span');
+    shared.className = 'badge badge--ok';
+    shared.textContent = 'Shared';
+    meta.append(' ', shared);
+  }
   if (a.excludedCount > 0) {
     const badge = document.createElement('span');
     badge.className = 'badge badge--warning';

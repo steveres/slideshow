@@ -13,7 +13,18 @@ export interface AlbumInfo {
   isStale: boolean;
   /** Preview of the album's first photo (in slideshow order), or null. */
   coverThumbnailUrl: string | null;
+  /** Anyone with the link can watch. */
+  isShared: boolean;
 }
+
+/** Link sharing for an album. `token` goes in the share link; null when not shared. */
+export interface ShareInfo { enabled: boolean; token: string | null; showMap: boolean; }
+
+/** What a share link gives: the slideshow only. */
+export interface SharedAlbum { name: string; showMap: boolean; slides: MediaInfo[]; music: MediaInfo[]; }
+
+/** The address to send people: plays the album without signing in. */
+export const shareLink = (token: string) => `${location.origin}/slideshow.html?share=${encodeURIComponent(token)}`;
 
 export type MissingData = 'date' | 'location';
 
@@ -66,6 +77,17 @@ export const AlbumsApi = {
       throw err;
     }
   },
+};
+
+export const SharingApi = {
+  get: (albumId: string) => api.get<ShareInfo>(`${at(albumId)}/share`),
+  update: (albumId: string, changes: { enabled?: boolean; showMap?: boolean }) => api.put<ShareInfo>(`${at(albumId)}/share`, changes),
+  async newLink(albumId: string): Promise<ShareInfo> {
+    return (await api.post<ShareInfo>(`${at(albumId)}/share/reset`))!;
+  },
+  /** For viewers: no sign-in. */
+  shared: (token: string) => api.publicGet<SharedAlbum>(`/api/v1/shared/${encodeURIComponent(token)}`),
+  download: (url: string) => api.publicBlob(url),
 };
 
 export const MediaApi = {

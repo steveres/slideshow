@@ -20,6 +20,7 @@ public sealed record CreateAlbumRequest(string? Name, string? Description);
 public sealed record AlbumInfoDto(
     Guid Id, string Name, string? Description, DateTime CreatedAt, DateTime UpdatedAt,
     int ImageCount, int VideoCount, int MusicCount, int ExcludedCount, long TotalBytes, DateTime? CompiledAt, bool IsStale,
+    bool IsShared,
     [property: JsonIgnore] Guid? CoverId)
 {
     public string? CoverThumbnailUrl => CoverId is { } c ? $"/api/v1/albums/{Id}/images/{c}/thumbnail" : null;
@@ -64,6 +65,15 @@ public sealed record MediaInfoDto(
 public sealed record AlbumManifestDto(
     Guid AlbumId, string Name, DateTime CompiledAt, bool IsStale,
     IReadOnlyList<MediaInfoDto> Slides, IReadOnlyList<MediaInfoDto> Music, int ExcludedCount);
+
+/// <param name="Token">The secret code for the share link (the website builds the link); null when not shared.</param>
+public sealed record ShareDto(bool Enabled, string? Token, bool ShowMap);
+
+/// <summary>Turn link sharing on/off and choose whether viewers see the map. Omitted fields stay as they are.</summary>
+public sealed record UpdateShareRequest(bool? Enabled, bool? ShowMap);
+
+/// <summary>What anonymous viewers of a share link get: the slideshow only, with file URLs under /api/v1/shared/{token}.</summary>
+public sealed record SharedAlbumDto(string Name, bool ShowMap, IReadOnlyList<MediaInfoDto> Slides, IReadOnlyList<MediaInfoDto> Music);
 
 /// <summary>Writes "taken" as local wall-clock time with no zone ("2026-07-04T09:31:05"), as it was recorded.</summary>
 public sealed class LocalDateTimeConverter : JsonConverter<DateTime?>

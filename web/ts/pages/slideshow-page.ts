@@ -1,12 +1,13 @@
 // Entry point for slideshow.html.
-//   slideshow.html?album=<id>  plays an album from the API (compiling it first if it has changed)
-//   slideshow.html             plays a folder from this computer
+//   slideshow.html?album=<id>    plays one of your albums (compiling it first if it has changed)
+//   slideshow.html?share=<code>  plays a shared album: anyone with the link, no sign-in
+//   slideshow.html               plays a folder from this computer
 
-import { AlbumsApi } from '../api/albums-api.js';
+import { AlbumsApi, SharingApi } from '../api/albums-api.js';
 import { requireSignIn } from '../auth/session.js';
 import { mountFolderPicker } from '../components/slideshow/folder-picker.js';
 import { mountSlideshow } from '../components/slideshow/slideshow.js';
-import { contentsFromManifest } from '../media/api-source.js';
+import { contentsFromManifest, contentsFromSharedAlbum } from '../media/api-source.js';
 import { query } from '../utils/dom.js';
 import { errorMessage } from '../utils/format.js';
 
@@ -14,10 +15,34 @@ const root = query(document, '.slideshow');
 const start = query(root, '.start-screen');
 const back = query<HTMLAnchorElement>(root, '.slideshow__back');
 const backLabel = query(back, '.slideshow__back-label');
-const albumId = new URLSearchParams(location.search).get('album');
+const params = new URLSearchParams(location.search);
+const albumId = params.get('album'), shareCode = params.get('share');
 
-if (albumId) await playAlbum(albumId);
+if (shareCode) await playShared(shareCode);
+else if (albumId) await playAlbum(albumId);
 else await playFolder();
+
+/** Anyone with the link: no sign-in, no way into the owner's account; back goes to the home page. */
+async function playShared(code: string): Promise<void> {
+  const message = query(start, '.start-screen__message');
+  query(start, '.start-screen__actions').hidden = true;
+  query(root, '.settings__change').hidden = true;
+  back.href = '/';
+  back.setAttribute('aria-label', 'Go to the Slideshow home page');
+  message.textContent = 'Loading slideshow…';
+  try {
+    const shared = await SharingApi.shared(code);
+    document.title = `${shared.name} - Slideshow`;
+    query(start, '.start-screen__title').textContent = shared.name;
+    backLabel.textContent = 'Slideshow';
+    if (!shared.slides.length) { message.textContent = 'This slideshow has no photos to show yet.'; return; }
+    const slideshow = mountSlideshow(root, { mapAllowed: shared.showMap });
+    start.hidden = true;
+    slideshow.play(contentsFromSharedAlbum(shared));
+  } catch (err) {
+    message.textContent = errorMessage(err);
+  }
+}
 
 async function playAlbum(id: string): Promise<void> {
   await requireSignIn();

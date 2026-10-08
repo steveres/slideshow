@@ -27,6 +27,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             e.Property(a => a.Description).HasMaxLength(Limits.AlbumDescriptionLength);
             e.HasOne<User>().WithMany().HasForeignKey(a => a.OwnerId).OnDelete(DeleteBehavior.Cascade);
             e.HasIndex(a => new { a.OwnerId, a.CreatedAt });
+            e.Property(a => a.ShareToken).HasMaxLength(32);
+            e.HasIndex(a => a.ShareToken).IsUnique(); // filtered to non-null
         });
 
         b.Entity<MediaFile>(e =>
