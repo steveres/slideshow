@@ -11,3 +11,8 @@ param allowedOrigins = []
 param webLocation = 'eastus2'      // Static Web Apps region (not offered in eastus)
 param sqlLocation = 'centralus'    // new subscriptions can't create SQL servers in eastus/eastus2 (checked October 2026)
 param useSqlFreeLimit = true
+
+// Start-up speed (October 2026: warm for a few weeks, then revert): 'serverless' + 0 = free but slow after idle;
+// 'basic' + 1 = no waiting, about US$15/month.
+param sqlTier = 'basic'
+param apiMinReplicas = 1

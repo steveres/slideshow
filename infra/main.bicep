@@ -42,6 +42,15 @@ param allowedOrigins array = []
 @description('Use the Azure SQL free offer (one database per subscription).')
 param useSqlFreeLimit bool = true
 
+@description('Database tier. serverless: auto-pauses when idle (slow first request after); basic: always on, about US$5/month. Note: the free offer can only be chosen when a database is created, so going back from basic to serverless does not bring it back.')
+@allowed(['serverless', 'basic'])
+param sqlTier string = 'serverless'
+
+@description('API instances kept running when idle. 0: scales to zero (slow first request after idle); 1: always warm, about US$10/month.')
+@minValue(0)
+@maxValue(3)
+param apiMinReplicas int = 0
+
 var suffix = uniqueString(resourceGroup().id)
 var names = {
   logs: '${appName}-logs'
@@ -184,13 +193,15 @@ resource sqlDb 'Microsoft.Sql/servers/databases@2023-08-01-preview' = {
   parent: sqlServer
   name: names.sqlDb
   location: sqlLocation
-  sku: { name: 'GP_S_Gen5_1', tier: 'GeneralPurpose' }
-  properties: {
-    autoPauseDelay: 60
-    minCapacity: json('0.5')
-    useFreeLimit: useSqlFreeLimit
-    freeLimitExhaustionBehavior: useSqlFreeLimit ? 'AutoPause' : null
-  }
+  sku: sqlTier == 'basic' ? { name: 'Basic', tier: 'Basic', capacity: 5 } : { name: 'GP_S_Gen5_1', tier: 'GeneralPurpose' }
+  properties: sqlTier == 'basic'
+    ? { maxSizeBytes: 2147483648 } // Basic allows up to 2 GB; album details are tiny (photos live in Blob Storage)
+    : {
+        autoPauseDelay: 60
+        minCapacity: json('0.5')
+        useFreeLimit: useSqlFreeLimit
+        freeLimitExhaustionBehavior: useSqlFreeLimit ? 'AutoPause' : null
+      }
 }
 
 // ───────────── Container Apps ─────────────
@@ -282,7 +293,7 @@ resource app 'Microsoft.App/containerApps@2024-03-01' = if (!empty(containerImag
         }
       ]
       scale: {
-        minReplicas: 0
+        minReplicas: apiMinReplicas
         maxReplicas: 3
         rules: [{ name: 'http', http: { metadata: { concurrentRequests: '50' } } }]
       }

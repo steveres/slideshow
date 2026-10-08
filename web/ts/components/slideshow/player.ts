@@ -4,6 +4,7 @@ import { FADE_MS } from '../../config.js';
 import { readLocation } from '../../media/gps.js';
 import type { LatLon, MediaItem, MediaKind } from '../../media/media-types.js';
 import type { Settings } from '../../utils/settings.js';
+import { startKenBurns } from './ken-burns.js';
 import type { MapView } from './map-view.js';
 
 export class Player {
@@ -25,6 +26,7 @@ export class Player {
   private video: HTMLVideoElement | null = null; // current item, if it is a video
   private front = 0;                 // which layer is currently visible
   private urls: (string | null)[] = [null, null];
+  private motions: (Animation | null)[] = [null, null]; // Ken Burns motion per layer
 
   constructor(private layers: HTMLElement[], private map: MapView, private settings: Settings) {}
 
@@ -65,9 +67,20 @@ export class Player {
       clearTimeout(this.timer);
       this.video?.pause();
     }
+    for (const motion of this.motions) {
+      if (!motion) continue;
+      if (!playing) motion.pause();
+      else if (motion.playState === 'paused') motion.play(); // (a finished one would restart)
+    }
   }
 
-  /** The image or video element currently on screen. */
+  /** Applies the "Animate photos" setting to the photo on screen right away. */
+  applyMotionSetting(): void {
+    if (this.settings.motion) this.animate(this.front);
+    else this.motions.forEach((motion, i) => { motion?.cancel(); this.motions[i] = null; });
+  }
+
+  /** The element holding the image or video on screen (the wheel/drag zoom moves this, the motion moves what's inside). */
   currentMedia(): HTMLElement | null { return this.layers[this.front].firstElementChild as HTMLElement | null; }
 
   /** Timeline drag: flip straight to item i, leaving the map alone until the drag ends. */
@@ -91,12 +104,16 @@ export class Player {
       if (gen !== this.generation || this.scrubbing) return; // moved on meanwhile
     }
     this.updateMap(false);
+    this.animate(this.front); // shown still while dragging; moves from here
     this.shownAt = performance.now();
     this.schedule();
   }
 
-  /** Re-arms the auto-advance after the duration setting changed. */
-  retime(): void { this.schedule(); }
+  /** Re-arms the auto-advance (and stretches the current motion) after the duration setting changed. */
+  retime(): void {
+    this.motions[this.front]?.effect?.updateTiming({ duration: this.motionMs() });
+    this.schedule();
+  }
 
   /** Brings the map in line with the current item (e.g. after the panel was switched on). */
   syncMap(): void { this.updateMap(false); }
@@ -151,6 +168,20 @@ export class Player {
     this.timer = window.setTimeout(() => this.next(), remaining);
   }
 
+  /** A photo moves from the start of its fade-in to the end of its fade-out. */
+  private motionMs(): number { return this.settings.duration * 1000 + FADE_MS; }
+
+  /**
+   * Starts the Ken Burns motion on the photo in layer i (if it holds a photo and motion is on).
+   * New photos always move, even while paused (stepping with Next/Prev); Pause freezes the one on screen.
+   */
+  private animate(i: number): void {
+    const img = this.layers[i].querySelector('img');
+    if (!img || !this.settings.motion || this.scrubbing) return;
+    this.motions[i]?.cancel();
+    this.motions[i] = startKenBurns(img, this.layers[i], this.motionMs());
+  }
+
   /** Loads the file into the hidden layer, then cross-fades to it. False if superseded meanwhile. */
   private async present(file: File, kind: MediaKind, live: () => boolean): Promise<boolean> {
     const url = URL.createObjectURL(file);
@@ -184,11 +215,16 @@ export class Player {
 
     const backIdx = 1 - this.front, oldIdx = this.front;
     this.clearLayer(backIdx);
-    this.layers[backIdx].replaceChildren(el);
+    // The wrapper takes the wheel/drag zoom; the photo inside takes the Ken Burns motion.
+    const holder = document.createElement('div');
+    holder.className = 'slideshow__media';
+    holder.append(el);
+    this.layers[backIdx].replaceChildren(holder);
     this.urls[backIdx] = url;
     this.layers[backIdx].classList.add('slideshow__layer--visible');
     this.layers[oldIdx].classList.remove('slideshow__layer--visible');
     this.front = backIdx;
+    this.animate(backIdx);
     this.video = video; // schedule() starts playback if we're playing
     this.onShow();
 
@@ -199,6 +235,8 @@ export class Player {
   }
 
   private clearLayer(i: number): void {
+    this.motions[i]?.cancel();
+    this.motions[i] = null;
     this.layers[i].querySelector('video')?.pause();
     this.layers[i].replaceChildren();
     const url = this.urls[i];

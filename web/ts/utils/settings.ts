@@ -1,9 +1,18 @@
 // Viewer preferences, kept in localStorage.
 
-export interface Settings { duration: number; showMap: boolean; muted: boolean; }
+export interface Settings {
+  duration: number;
+  showMap: boolean;
+  muted: boolean;
+  /** Ken Burns motion: a gentle zoom or pan on each photo. */
+  motion: boolean;
+  /** Photos fill the frame (cropping the overhang) instead of fitting inside it with bars. */
+  fill: boolean;
+}
 
 const SETTINGS_KEY = 'slideshow.settings.v2'; // bumped so the new default duration applies
-export const DEFAULTS: Settings = { duration: 2, showMap: true, muted: false };
+const prefersReducedMotion = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+export const DEFAULTS: Settings = { duration: 2, showMap: true, muted: false, motion: !prefersReducedMotion, fill: true };
 
 export function loadSettings(): Settings {
   try {

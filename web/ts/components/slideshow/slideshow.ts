@@ -100,6 +100,15 @@ export function mountSlideshow(root: HTMLElement, options: SlideshowOptions = {}
   showMap.checked = settings.showMap;
   showMap.onchange = () => { settings.showMap = showMap.checked; saveSettings(settings); applyMapVisibility(); };
 
+  // Photo display: Ken Burns motion, and fill the frame (crop) vs. fit inside it (bars)
+  const motion = query<HTMLInputElement>(root, '.settings__motion'), fill = query<HTMLInputElement>(root, '.settings__fill');
+  const applyFill = () => root.classList.toggle('slideshow--fit', !settings.fill);
+  applyFill();
+  motion.checked = settings.motion;
+  fill.checked = settings.fill;
+  motion.onchange = () => { settings.motion = motion.checked; saveSettings(settings); player.applyMotionSetting(); };
+  fill.onchange = () => { settings.fill = fill.checked; saveSettings(settings); applyFill(); };
+
   query(root, '.settings__restart').onclick = () => { togglePanel(false); if (active) player.restart(); };
   query(root, '.settings__change').onclick = () => {
     togglePanel(false);
