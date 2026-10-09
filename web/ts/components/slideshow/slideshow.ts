@@ -1,7 +1,7 @@
 // The slideshow component: photo frame, controls, timeline, route map, music and settings.
 // It plays whatever SlideshowContents it is given and doesn't know where they came from.
 
-import { FADE_MS, MAX_DURATION, OVERLAY_IDLE_MS } from '../../config.js';
+import { FADE_MS, MAX_DURATION, MUSIC_FADE_MS, OVERLAY_IDLE_MS } from '../../config.js';
 import type { SlideshowContents } from '../../media/media-types.js';
 import { clamp, query } from '../../utils/dom.js';
 import { DEFAULTS, loadSettings, saveSettings } from '../../utils/settings.js';
@@ -66,10 +66,11 @@ export function mountSlideshow(root: HTMLElement, options: SlideshowOptions = {}
   duration.onchange = () => setDuration(Number(duration.value));
   speed.oninput = () => setDuration(MAX_DURATION + 1 - Number(speed.value));
 
-  // Music is silent while the slideshow is paused, or when muted.
+  // Music is silent while the slideshow is paused, or when muted; at the end (Repeat off) it fades out instead.
   let playing = true;
+  let ending = false;
   const applyMuted = () => {
-    music.setMuted(settings.muted || !playing);
+    music.setMuted(settings.muted || (!playing && !ending));
     muteBtn.setAttribute('aria-label', settings.muted ? 'Unmute music' : 'Mute music');
     muteBtn.querySelector('.icon-sound')?.toggleAttribute('hidden', settings.muted);
     muteBtn.querySelector('.icon-muted')?.toggleAttribute('hidden', !settings.muted);
@@ -78,7 +79,9 @@ export function mountSlideshow(root: HTMLElement, options: SlideshowOptions = {}
   muteBtn.onclick = () => { settings.muted = !settings.muted; saveSettings(settings); applyMuted(); };
 
   // Control bar
+  player.onEnded = () => { ending = true; music.fadeOut(MUSIC_FADE_MS); };
   player.onState = isPlaying => {
+    if (isPlaying && ending) { ending = false; music.resume(); }
     playing = isPlaying;
     applyMuted();
     wake();
@@ -111,7 +114,11 @@ export function mountSlideshow(root: HTMLElement, options: SlideshowOptions = {}
   motion.checked = settings.motion;
   fill.checked = settings.fill;
   motion.onchange = () => { settings.motion = motion.checked; saveSettings(settings); player.applyMotionSetting(); };
-  fill.onchange = () => { settings.fill = fill.checked; saveSettings(settings); applyFill(); };
+
+  const repeat = query<HTMLInputElement>(root, '.settings__repeat');
+  repeat.checked = settings.repeat;
+  repeat.onchange = () => { settings.repeat = repeat.checked; saveSettings(settings); };
+  fill.onchange = () => { settings.fill = fill.checked; saveSettings(settings); applyFill(); player.applyFillSetting(); };
 
   query(root, '.settings__restart').onclick = () => { togglePanel(false); if (active) player.restart(); };
   query(root, '.settings__change').onclick = () => {

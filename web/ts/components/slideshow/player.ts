@@ -1,11 +1,18 @@
 // Plays the slides: cross-fades between two layers, auto-advances, and keeps the map in step.
 
-import { FADE_MS } from '../../config.js';
+import { BACKDROP_CROP, FADE_MS } from '../../config.js';
 import { readLocation } from '../../media/gps.js';
 import type { LatLon, MediaItem, MediaKind } from '../../media/media-types.js';
 import type { Settings } from '../../utils/settings.js';
 import { startKenBurns } from './ken-burns.js';
 import type { MapView } from './map-view.js';
+
+/** A portrait photo that filling `frame` would crop by more than BACKDROP_CROP of its height. */
+function tooTallFor(img: HTMLImageElement, frame: HTMLElement): boolean {
+  const frameAspect = frame.clientWidth / Math.max(1, frame.clientHeight);
+  const photoAspect = img.naturalWidth / Math.max(1, img.naturalHeight);
+  return photoAspect < 1 && photoAspect < frameAspect && 1 - photoAspect / frameAspect > BACKDROP_CROP;
+}
 
 export class Player {
   /** Called whenever play/pause state changes, so the UI can update its button. */
@@ -14,12 +21,15 @@ export class Player {
   onShow: () => void = () => {};
   /** Called when the current position changes. */
   onIndex: (index: number) => void = () => {};
+  /** Called when the slideshow reaches its end with Repeat off (it stays on the last slide). */
+  onEnded: () => void = () => {};
 
   private items: MediaItem[] = [];
   private locs: (LatLon | null | undefined)[] = []; // per item; undefined = not read yet
   private index = 0;
   private generation = 0;            // bumping this abandons any navigation still loading
   private playing = true;
+  private ended = false;             // stopped on the last slide (Repeat off); Play starts again from the top
   private scrubbing = false;         // timeline is being dragged: no map updates, no auto-advance
   private timer: number | undefined; // pending auto-advance
   private shownAt = 0;               // when the current image's display time started
@@ -33,6 +43,7 @@ export class Player {
   start(items: MediaItem[]): void {
     this.items = items;
     this.locs = [];
+    this.ended = false;
     this.setPlaying(true);
     this.restart();
   }
@@ -45,6 +56,7 @@ export class Player {
 
   stop(): void {
     this.generation++;
+    this.ended = false;
     clearTimeout(this.timer);
     this.scrubbing = false;
     this.items = [];
@@ -53,11 +65,24 @@ export class Player {
     this.layers.forEach((layer, i) => { layer.classList.remove('slideshow__layer--visible'); this.clearLayer(i); });
   }
 
-  next(): void { if (this.items.length) void this.go((this.index + 1) % this.items.length, true); }
+  /** Next slide; after the last one, the first again (Repeat on) or nowhere (Repeat off). */
+  next(): void {
+    if (!this.items.length) return;
+    const atEnd = this.index + 1 >= this.items.length;
+    if (atEnd && !this.settings.repeat) return;
+    void this.go(atEnd ? 0 : this.index + 1, true);
+  }
   previous(): void { if (this.index > 0) void this.go(this.index - 1, false); }
   toggle(): void { this.setPlaying(!this.playing); }
 
   setPlaying(playing: boolean): void {
+    if (playing && this.ended) { // Play after the end: from the top
+      this.ended = false;
+      this.playing = true;
+      this.onState(true);
+      this.restart();
+      return;
+    }
     this.playing = playing;
     this.onState(playing);
     if (playing) {
@@ -118,9 +143,21 @@ export class Player {
   /** Brings the map in line with the current item (e.g. after the panel was switched on). */
   syncMap(): void { this.updateMap(false); }
 
+  /** Auto-advance: at the end, loop (Repeat on) or stop on the last slide (Repeat off). */
+  private advance(): void {
+    if (this.index + 1 >= this.items.length && !this.settings.repeat) {
+      this.ended = true;
+      this.onEnded(); // before the pause, so the music can fade rather than cut
+      this.setPlaying(false);
+      return;
+    }
+    this.next();
+  }
+
   /** Shows item i. `forward` is false when stepping back. */
   private async go(i: number, forward: boolean): Promise<void> {
     const gen = ++this.generation;
+    this.ended = false; // stepping somewhere: Play continues from here
     const live = () => gen === this.generation;
     clearTimeout(this.timer);
     this.index = i;
@@ -165,7 +202,7 @@ export class Player {
     if (!this.playing || this.scrubbing || !this.items.length) return;
     if (this.video) { void this.video.play().catch(() => undefined); return; } // advances when it ends
     const remaining = Math.max(0, this.settings.duration * 1000 - (performance.now() - this.shownAt));
-    this.timer = window.setTimeout(() => this.next(), remaining);
+    this.timer = window.setTimeout(() => this.advance(), remaining);
   }
 
   /** A photo moves from the start of its fade-in to the end of its fade-out. */
@@ -176,7 +213,7 @@ export class Player {
    * New photos always move, even while paused (stepping with Next/Prev); Pause freezes the one on screen.
    */
   private animate(i: number): void {
-    const img = this.layers[i].querySelector('img');
+    const img = this.layers[i].querySelector<HTMLImageElement>('img.slideshow__photo');
     if (!img || !this.settings.motion || this.scrubbing) return;
     this.motions[i]?.cancel();
     this.motions[i] = startKenBurns(img, this.layers[i], this.motionMs());
@@ -204,7 +241,7 @@ export class Player {
           v.onloadeddata = () => resolve();
           v.onerror = () => reject(new Error('unsupported video'));
         });
-        v.onended = v.onerror = () => { if (this.video === v && this.playing) this.next(); };
+        v.onended = v.onerror = () => { if (this.video === v && this.playing) this.advance(); };
         el = v;
       }
     } catch (err) {
@@ -218,7 +255,9 @@ export class Player {
     // The wrapper takes the wheel/drag zoom; the photo inside takes the Ken Burns motion.
     const holder = document.createElement('div');
     holder.className = 'slideshow__media';
+    el.classList.add('slideshow__photo');
     holder.append(el);
+    this.setBackdrop(holder, this.layers[1 - this.front]);
     this.layers[backIdx].replaceChildren(holder);
     this.urls[backIdx] = url;
     this.layers[backIdx].classList.add('slideshow__layer--visible');
@@ -232,6 +271,32 @@ export class Player {
     const oldUrl = this.urls[oldIdx];
     setTimeout(() => { if (this.urls[oldIdx] === oldUrl && this.front !== oldIdx) this.clearLayer(oldIdx); }, FADE_MS);
     return true;
+  }
+
+  /**
+   * Photos shown whole get a blurred copy of themselves behind them instead of black bars: all photos
+   * with "Fill the screen" off, and portrait photos that filling the frame would crop too much.
+   */
+  private setBackdrop(holder: HTMLElement, frame: HTMLElement): void {
+    const photo = holder.querySelector<HTMLImageElement>('img.slideshow__photo');
+    const want = !!photo && (!this.settings.fill || tooTallFor(photo, frame));
+    let backdrop = holder.querySelector<HTMLImageElement>('img.slideshow__backdrop');
+    if (want && !backdrop) {
+      backdrop = new Image();
+      backdrop.alt = '';
+      backdrop.className = 'slideshow__backdrop';
+      backdrop.src = photo!.src;
+      holder.prepend(backdrop);
+    } else if (!want) backdrop?.remove();
+    holder.classList.toggle('slideshow__media--backdrop', want);
+  }
+
+  /** Applies the "Fill the screen" setting to the photos on screen right away. */
+  applyFillSetting(): void {
+    this.layers.forEach(layer => {
+      const holder = layer.querySelector<HTMLElement>('.slideshow__media');
+      if (holder) this.setBackdrop(holder, layer);
+    });
   }
 
   private clearLayer(i: number): void {
