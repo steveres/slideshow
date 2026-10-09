@@ -1,6 +1,6 @@
 // Plays the slides: cross-fades between two layers, auto-advances, and keeps the map in step.
 
-import { BACKDROP_CROP, FADE_MS } from '../../config.js';
+import { BACKDROP_CROP, FADE_MS, VIDEO_NUDGE_MS } from '../../config.js';
 import { readLocation } from '../../media/gps.js';
 import type { LatLon, MediaItem, MediaKind } from '../../media/media-types.js';
 import type { Settings } from '../../utils/settings.js';
@@ -236,11 +236,9 @@ export class Player {
         const v = video;
         v.muted = true;           // required for autoplay
         v.playsInline = true;
+        v.preload = 'auto';
         v.src = url;
-        await new Promise<void>((resolve, reject) => {
-          v.onloadeddata = () => resolve();
-          v.onerror = () => reject(new Error('unsupported video'));
-        });
+        await this.firstFrame(v);
         v.onended = v.onerror = () => { if (this.video === v && this.playing) this.advance(); };
         el = v;
       }
@@ -271,6 +269,23 @@ export class Player {
     const oldUrl = this.urls[oldIdx];
     setTimeout(() => { if (this.urls[oldIdx] === oldUrl && this.front !== oldIdx) this.clearLayer(oldIdx); }, FADE_MS);
     return true;
+  }
+
+  /**
+   * Resolves once the video's first frame is ready. iOS Safari may not load a video nobody has asked
+   * to play (until the viewer taps something), so if it hasn't loaded after a moment, a muted play()
+   * (allowed without a tap) starts the loading.
+   */
+  private firstFrame(v: HTMLVideoElement): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const nudge = window.setTimeout(() => {
+        // Stop again unless it has gone on screen meanwhile and the slideshow is playing.
+        v.play().then(() => { if (this.video !== v || !this.playing) v.pause(); }, () => undefined);
+      }, VIDEO_NUDGE_MS);
+      v.onloadeddata = () => { clearTimeout(nudge); resolve(); };
+      v.onerror = () => { clearTimeout(nudge); reject(new Error('unsupported video')); };
+      v.load();
+    });
   }
 
   /**

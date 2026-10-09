@@ -22,4 +22,5 @@ export const TIMELINE_LABELS = 10;  // date labels along the timeline
 export const TILE = 256;            // Web Mercator world size in px at zoom 0
 export const OVERLAY_IDLE_MS = 3000; // hide the controls, timeline and buttons after this long without input
 export const BACKDROP_CROP = 0.25;  // a photo that would lose more than this to cropping is shown whole, over a blurred copy
+export const VIDEO_NUDGE_MS = 1000; // a video not loaded by then gets a muted play() to start loading (iOS Safari)
 export const MUSIC_FADE_MS = 4000;  // music fade-out when the slideshow ends (Repeat off)
